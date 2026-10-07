@@ -169,38 +169,53 @@ body.drawer-open .drawer{transform:translateX(0)}
 
   <div id="appView" class="app-view" aria-live="polite"></div>
 
+  <div id="authModal" class="modal-backdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <button id="authClose" class="modal-close" aria-label="Close">×</button>
+      <div class="modal-logo"><img src="https://raw.githubusercontent.com/Aora-group-entreprise/Methis-AI/main/file_0000000081f88208bb42c3ed7879a73a.png" alt=""></div>
+      <h2 id="authTitle">Sign in</h2>
+      <p id="authSubtitle">Access your Methis AI account.</p>
+      <form id="authForm">
+        <input id="authEmail" type="email" autocomplete="email" placeholder="Email" required>
+        <input id="authPassword" type="password" autocomplete="current-password" placeholder="Password" minlength="6" required>
+        <button id="authSubmit" class="modal-primary" type="submit">Sign in</button>
+      </form>
+      <button id="authSwitch" class="modal-link" type="button">Create an account</button>
+      <div id="authStatus" class="auth-status" role="status"></div>
+    </section>
+  </div>
+
+  <div id="infoModal" class="modal-backdrop" hidden>
+    <section class="modal info-modal" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+      <button id="infoClose" class="modal-close" aria-label="Close">×</button>
+      <h2 id="infoTitle"></h2>
+      <div id="infoBody" class="info-body"></div>
+    </section>
+  </div>
+
   <style>
 .app-view{position:fixed;inset:0;background:#080C15;z-index:30;display:none;overflow:auto;padding:24px}
 .app-view.active{display:block}
-.app-screen{width:100%;max-width:520px;margin:0 auto;padding-bottom:32px}
-.app-screen-head{display:flex;align-items:center;gap:12px;margin-bottom:30px;padding-top:4px}
-.back-button{width:40px;height:40px;border:1px solid #2A2E4A;border-radius:11px;background:#12162A;color:#fff;font-size:25px;line-height:1}
-.app-screen h2{font-size:28px;margin:0;letter-spacing:-.035em}
-.app-screen-subtitle{color:#8A8ED6;font-size:13px;line-height:1.55;margin:8px 0 0}
-.app-card{background:#12162A;border:1px solid #2A2E4A;border-radius:16px;padding:20px;margin-top:14px}
-.account-email{color:#8A8ED6;font-size:13px;margin-top:6px}
-.dashboard-stat{display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid #2A2E4A;font-size:13px}
-.dashboard-stat:last-child{border-bottom:0}
+.app-screen{width:100%;max-width:520px;margin:0 auto}
+.app-screen-head{display:flex;align-items:center;gap:12px;margin-bottom:26px}
+.back-button{width:40px;height:40px;border:1px solid #2A2E4A;border-radius:11px;background:#12162A;color:#fff}
+.app-screen h2{font-size:28px;margin:0}.app-card{background:#12162A;border:1px solid #2A2E4A;border-radius:16px;padding:20px;margin-top:14px}
+.account-email{color:#8A8ED6;font-size:13px;margin-top:6px}.dashboard-stat{display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid #2A2E4A;font-size:13px}.dashboard-stat:last-child{border-bottom:0}
 .signout{width:100%;height:44px;margin-top:18px;border:1px solid #2A2E4A;border-radius:11px;background:transparent;color:#fff}
-.page-form{display:grid;gap:12px}
-.page-input{width:100%;height:48px;border:1px solid #2A2E4A;border-radius:12px;background:#12162A;color:#fff;padding:0 14px;outline:none}
-.page-input:focus{border-color:#7A5CFF}
-.page-primary{width:100%;height:46px;border:0;border-radius:11px;background:linear-gradient(135deg,#FF4ECD,#7A5CFF,#4ECDC4);color:#fff;font-weight:700}
-.page-link{display:block;margin:14px auto 0;border:0;background:transparent;color:#8A8ED6;font-size:12px}
-.page-status{text-align:center;min-height:18px;margin-top:10px;color:#FF8FE0;font-size:12px}
-.page-copy{color:#D9DAF4;font-size:13px;line-height:1.7}
-.page-copy p{margin:0 0 16px}
-.page-copy p:last-child{margin-bottom:0}
-
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.68);z-index:40;display:grid;place-items:center;padding:20px}.modal-backdrop[hidden]{display:none}
+.modal{position:relative;width:min(100%,390px);background:#0D1120;border:1px solid #2A2E4A;border-radius:20px;padding:28px 20px 22px;box-shadow:0 25px 80px rgba(0,0,0,.55)}
+.modal-close{position:absolute;right:14px;top:12px;width:34px;height:34px;border:0;background:transparent;color:#fff;font-size:25px}.modal-logo{text-align:center}.modal-logo img{width:58px;height:58px;object-fit:contain}.modal h2{text-align:center;margin:12px 0 6px;font-size:25px}.modal>p{text-align:center;color:#8A8ED6;font-size:12px;margin:0 0 20px}
+#authForm{display:grid;gap:11px}.modal input{width:100%;height:46px;border:1px solid #2A2E4A;border-radius:11px;background:#12162A;color:#fff;padding:0 13px;outline:none}.modal input:focus{border-color:#7A5CFF}
+.modal-primary{height:46px;border:0;border-radius:11px;background:linear-gradient(135deg,#FF4ECD,#7A5CFF,#4ECDC4);color:#fff;font-weight:700}.modal-link{display:block;margin:14px auto 0;border:0;background:transparent;color:#8A8ED6;font-size:12px}.auth-status{text-align:center;min-height:18px;margin-top:10px;color:#FF8FE0;font-size:12px}.info-body{color:#D9DAF4;font-size:13px;line-height:1.7}
+</style>
 
   <script>
     const body = document.body;
+
     const menuButton = document.getElementById('menuButton');
     const drawer = document.getElementById('sidePanel');
     const backdrop = document.getElementById('drawerBackdrop');
     const closeMenu = document.getElementById('closeMenu');
-    const appView = document.getElementById('appView');
-    const repository = document.getElementById('repository');
 
     function openMenu(){
       body.classList.add('drawer-open');
@@ -213,154 +228,122 @@ body.drawer-open .drawer{transform:translateX(0)}
       menuButton.setAttribute('aria-expanded','false');
       drawer.setAttribute('aria-hidden','true');
     }
-    menuButton.addEventListener('click',openMenu);
-    closeMenu.addEventListener('click',closeDrawer);
-    backdrop.addEventListener('click',closeDrawer);
-    document.addEventListener('keydown',event=>{if(event.key==='Escape')closeDrawer()});
 
-    const SUPABASE_URL='https://dyqkgkqlihcrhrpcbjgh.supabase.co';
-    const SUPABASE_PUBLISHABLE_KEY='sb_publishable_bmraW60kS5DKdI2qO_7aNA_WoHYgHq';
-    const supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+    menuButton.addEventListener('click', openMenu);
+    closeMenu.addEventListener('click', closeDrawer);
+    backdrop.addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', event => {
+      if(event.key === 'Escape') closeDrawer();
+    });
 
-    function escapeHtml(value){
-      return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    }
+    const SUPABASE_URL = 'https://dyqkgkqlihcrhrpcbjgh.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_bmraW60kS5DKdI2qO_7aNA_WoHYgHq';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-    function closeAppView(){
-      appView.classList.remove('active');
-      appView.innerHTML='';
-    }
+    const authModal = document.getElementById('authModal');
+    const authForm = document.getElementById('authForm');
+    const authTitle = document.getElementById('authTitle');
+    const authSubtitle = document.getElementById('authSubtitle');
+    const authSubmit = document.getElementById('authSubmit');
+    const authSwitch = document.getElementById('authSwitch');
+    const authStatus = document.getElementById('authStatus');
+    let authMode = 'signin';
 
-    function showPage(title,subtitle,content){
-      appView.innerHTML=`<div class="app-screen">
-        <div class="app-screen-head">
-          <button class="back-button" id="pageBack" type="button" aria-label="Back">‹</button>
-          <div><h2>${title}</h2><p class="app-screen-subtitle">${subtitle||''}</p></div>
-        </div>
-        ${content}
-      </div>`;
-      appView.classList.add('active');
-      document.getElementById('pageBack').onclick=closeAppView;
+    function showAuth(mode){
+      authMode = mode;
+      authTitle.textContent = mode === 'signin' ? 'Sign in' : 'Sign up';
+      authSubtitle.textContent = mode === 'signin' ? 'Access your Methis AI account.' : 'Create your Methis AI account.';
+      authSubmit.textContent = mode === 'signin' ? 'Sign in' : 'Create account';
+      authSwitch.textContent = mode === 'signin' ? 'Create an account' : 'I already have an account';
+      authStatus.textContent = '';
+      authForm.reset();
+      authModal.hidden = false;
       closeDrawer();
+      setTimeout(() => document.getElementById('authEmail').focus(), 0);
     }
+    function closeAuth(){authModal.hidden=true}
+    document.getElementById('authClose').addEventListener('click', closeAuth);
+    authModal.addEventListener('click', e => {if(e.target===authModal) closeAuth()});
+    authSwitch.addEventListener('click', () => showAuth(authMode === 'signin' ? 'signup' : 'signin'));
 
-    function showAuth(mode='signin'){
-      const signup=mode==='signup';
-      showPage(
-        signup?'Sign up':'Sign in',
-        signup?'Create your Methis AI account.':'Access your Methis AI account.',
-        `<div class="app-card">
-          <form id="authForm" class="page-form">
-            <input id="authEmail" class="page-input" type="email" autocomplete="email" placeholder="Email" required>
-            <input id="authPassword" class="page-input" type="password" autocomplete="current-password" placeholder="Password" minlength="6" required>
-            <button id="authSubmit" class="page-primary" type="submit">${signup?'Create account':'Sign in'}</button>
-          </form>
-          <button id="authSwitch" class="page-link" type="button">${signup?'I already have an account':'Create an account'}</button>
-          <div id="authStatus" class="page-status" role="status"></div>
-        </div>`
-      );
-      document.getElementById('authSwitch').onclick=()=>showAuth(signup?'signin':'signup');
-      document.getElementById('authForm').onsubmit=async event=>{
-        event.preventDefault();
-        const submit=document.getElementById('authSubmit');
-        const status=document.getElementById('authStatus');
-        submit.disabled=true;
-        status.textContent='Please wait…';
-        const email=document.getElementById('authEmail').value.trim();
-        const password=document.getElementById('authPassword').value;
-        const result=signup
-          ? await supabase.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin}})
-          : await supabase.auth.signInWithPassword({email,password});
-        submit.disabled=false;
-        if(result.error){status.textContent=result.error.message;return}
-        if(signup&&!result.data.session){
-          status.textContent='Check your email to verify your account.';
-          return;
-        }
-        closeAppView();
-        updateMenuForSession();
-      };
-      setTimeout(()=>document.getElementById('authEmail')?.focus(),0);
+    authForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      authStatus.textContent = 'Please wait…';
+      authSubmit.disabled = true;
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      const result = authMode === 'signin'
+        ? await supabase.auth.signInWithPassword({email,password})
+        : await supabase.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin}});
+      authSubmit.disabled = false;
+      if(result.error){authStatus.textContent=result.error.message;return}
+      closeAuth();
+      if(authMode === 'signup' && !result.data.session){
+        showInfo('Check your email', '<p>Your account was created. Open the verification email from Supabase, then return here and sign in.</p>');
+      }
+      updateMenuForSession();
+    });
+
+    async function updateMenuForSession(){
+      const {data:{session}} = await supabase.auth.getSession();
+      const signedIn = !!session;
+      document.getElementById('dashboardItem').querySelector('span').textContent = signedIn ? 'Dashboard' : 'Dashboard · Sign in required';
     }
 
     async function openDashboard(){
-      const {data:{session}}=await supabase.auth.getSession();
+      closeDrawer();
+      const {data:{session}} = await supabase.auth.getSession();
       if(!session){showAuth('signin');return}
-      showPage(
-        'Dashboard',
-        session.user.email||'Your Methis AI workspace',
-        `<div class="app-card">
-          <div class="dashboard-stat"><span>Account</span><strong>Active</strong></div>
-          <div class="dashboard-stat"><span>Plan</span><strong>Free</strong></div>
-          <div class="dashboard-stat"><span>Authentication</span><strong>Supabase</strong></div>
-          <button class="signout" id="signoutButton" type="button">Sign out</button>
-        </div>`
-      );
-      document.getElementById('signoutButton').onclick=async()=>{
-        await supabase.auth.signOut();
-        closeAppView();
-        updateMenuForSession();
-      };
+      const user=session.user;
+      const view=document.getElementById('appView');
+      view.innerHTML=`<div class="app-screen"><div class="app-screen-head"><button class="back-button" id="dashboardBack">‹</button><div><h2>Dashboard</h2><div class="account-email">${escapeHtml(user.email || 'Account')}</div></div></div><div class="app-card"><div class="dashboard-stat"><span>Account</span><strong>Active</strong></div><div class="dashboard-stat"><span>Plan</span><strong>Free</strong></div><div class="dashboard-stat"><span>Authentication</span><strong>Supabase</strong></div><button class="signout" id="signoutButton">Sign out</button></div></div>`;
+      view.classList.add('active');
+      document.getElementById('dashboardBack').onclick=closeAppView;
+      document.getElementById('signoutButton').onclick=async()=>{await supabase.auth.signOut();closeAppView();updateMenuForSession()};
     }
+    function escapeHtml(value){return value.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+    function closeAppView(){document.getElementById('appView').classList.remove('active');document.getElementById('appView').innerHTML=''}
 
-    function openAbout(){
-      showPage('About','What Methis AI is.',`<div class="app-card page-copy">
-        <p><strong>Methis AI</strong> is an AI coding agent designed to understand a repository and fix one specific problem at a time.</p>
-        <p>It focuses on controlled repository changes, validation, and GitHub-ready fixes instead of making broad unexplained edits.</p>
-      </div>`);
+    function showInfo(title, html){
+      document.getElementById('infoTitle').textContent=title;
+      document.getElementById('infoBody').innerHTML=html;
+      document.getElementById('infoModal').hidden=false;
+      closeDrawer();
     }
+    document.getElementById('infoClose').onclick=()=>document.getElementById('infoModal').hidden=true;
+    document.getElementById('infoModal').addEventListener('click',e=>{if(e.target.id==='infoModal')e.target.hidden=true});
 
-    function openLicense(){
-      showPage('License','Software and third-party notices.',`<div class="app-card page-copy">
-        <p>Methis AI web interface and application code are maintained by Aora Group.</p>
-        <p>Third-party dependencies remain under their respective licenses. Supabase JS is distributed under its own open-source license.</p>
-      </div>`);
-    }
+    document.getElementById('dashboardItem').addEventListener('click',openDashboard);
+    document.getElementById('signinItem').addEventListener('click',()=>showAuth('signin'));
+    document.getElementById('signupItem').addEventListener('click',()=>showAuth('signup'));
+    document.getElementById('aboutItem').addEventListener('click',()=>showInfo('About','<p><strong>Methis AI</strong> is a conservative AI coding agent designed to understand a repository and fix one specific problem at a time.</p><p>It uses a local open-weight coding model and validates changes before they are prepared for GitHub.</p>'));
+    document.getElementById('licenseItem').addEventListener('click',()=>showInfo('License','<p>Methis AI web interface and application code are maintained by Aora Group.</p><p>Third-party dependencies remain under their respective licenses. Supabase JS is distributed under its own open-source license.</p>'));
+    document.getElementById('run').addEventListener('click', async () => {
+      const {data:{session}} = await supabase.auth.getSession();
+      if(!session){ showAuth('signin'); return; }
+      const repo=document.getElementById('repository').value.trim();
+      if(!repo){ document.getElementById('repository').focus(); return; }
+      showInfo('Run', '<p>Repository received:</p><p><strong>'+escapeHtml(repo)+'</strong></p><p>Your authenticated Methis workspace can continue with this repository.</p>');
+    });
 
-    function setMode(mode){
-      repository.placeholder=mode==='analyze'
-        ? 'Paste your GitHub repository to analyze\\nhttps://github.com/owner/repository'
-        : 'Paste your GitHub repository to fix\\nhttps://github.com/owner/repository';
-      repository.dataset.mode=mode;
-      repository.focus();
-    }
+    document.getElementById('analyze').addEventListener('click', () => {
+      const field=document.getElementById('repository');
+      field.placeholder='Paste your GitHub repository to analyze\\nhttps://github.com/owner/repository';
+      field.focus();
+    });
 
-    document.getElementById('run').onclick=async()=>{
-      const {data:{session}}=await supabase.auth.getSession();
-      if(!session){showAuth('signin');return}
-      const repo=repository.value.trim();
-      if(!repo){
-        repository.focus();
-        repository.setAttribute('aria-label','Enter a GitHub repository');
-        return;
-      }
-      showPage('Run','Ready to process your repository.',`<div class="app-card page-copy">
-        <p><strong>Repository</strong><br>${escapeHtml(repo)}</p>
-        <p>${repository.dataset.mode==='fix'?'Fix':'Analyze'} is ready. The authenticated workspace can continue from here.</p>
-      </div>`);
-    };
-    document.getElementById('analyze').onclick=()=>setMode('analyze');
-    document.getElementById('fix').onclick=()=>setMode('fix');
-    document.getElementById('upgradeButton').onclick=()=>showAuth('signin');
+    document.getElementById('fix').addEventListener('click', () => {
+      const field=document.getElementById('repository');
+      field.placeholder='Paste your GitHub repository to fix\\nhttps://github.com/owner/repository';
+      field.focus();
+    });
 
-    document.getElementById('dashboardItem').onclick=openDashboard;
-    document.getElementById('signinItem').onclick=()=>showAuth('signin');
-    document.getElementById('signupItem').onclick=()=>showAuth('signup');
-    document.getElementById('aboutItem').onclick=openAbout;
-    document.getElementById('licenseItem').onclick=openLicense;
+    document.getElementById('upgradeButton').addEventListener('click', async () => {
+      const {data:{session}} = await supabase.auth.getSession();
+      if(!session){ showAuth('signin'); return; }
+      showInfo('Pro', '<p>Pro upgrade is available from your authenticated Methis workspace.</p><p>Secure USDC payment will be connected here.</p>');
+    });
 
-    async function updateMenuForSession(){
-      const {data:{session}}=await supabase.auth.getSession();
-      const signIn=document.getElementById('signinItem');
-      const signUp=document.getElementById('signupItem');
-      signIn.querySelector('span').textContent=session?'Account':'Sign in';
-      signUp.querySelector('span').textContent=session?'Sign out':'Sign up';
-      if(session){
-        signUp.onclick=async()=>{await supabase.auth.signOut();updateMenuForSession();closeDrawer()};
-      }else{
-        signUp.onclick=()=>showAuth('signup');
-      }
-    }
     supabase.auth.onAuthStateChange(()=>updateMenuForSession());
     updateMenuForSession();
   </script>
