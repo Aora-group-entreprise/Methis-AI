@@ -3,7 +3,7 @@ import { join, relative } from "node:path";
 import type { RepositoryFile, RepositorySnapshot, SupportedLanguage } from "./types.js";
 
 const IGNORED = new Set([".git", "node_modules", "dist", "build", ".next", ".turbo", "coverage", ".cache", ".venv"]);
-const PROTECTED = /(^|\\/)(?:\.env(?:\\..*)?|.*(?:secret|credential).*)$|(?:\\.(?:pem|key|p12|pfx))$/i;
+const PROTECTED = /(^|\/)(?:\.env(?:\..*)?|.*(?:secret|credential).*)$|(?:\.(?:pem|key|p12|pfx))$/i;
 const MAX_FILES = 2000;
 const MAX_FILE_SIZE = 2_000_000;
 
