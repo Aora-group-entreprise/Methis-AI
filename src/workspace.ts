@@ -1,6 +1,6 @@
 import { cp, mkdtemp, rm, readFile, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, resolve, relative, isAbsolute, sep } from "node:path";
 import type { RepositoryFile } from "./types.js";
 
 const MAX_FILES = 2000;
@@ -54,7 +54,8 @@ export class TemporaryWorkspace {
       throw new Error(`Unsafe workspace path: ${path}`);
     }
     const target = resolve(this.root, path);
-    if (!target.startsWith(resolve(this.root) + "/")) {
+    const relativePath = relative(resolve(this.root), target);
+    if (relativePath.startsWith(".."+sep) || isAbsolute(relativePath)) {
       throw new Error(`Unsafe workspace path: ${path}`);
     }
     return target;
