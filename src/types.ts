@@ -20,10 +20,16 @@ export interface BugReport {
   errorOutput?: string;
 }
 
+export interface FileChange {
+  path: string;
+  content: string;
+}
+
 export interface FixPlan {
   summary: string;
   files: string[];
   reasoning: string;
+  changes: FileChange[];
 }
 
 export interface VerificationResult {
@@ -37,4 +43,5 @@ export interface FixResult {
   plan: FixPlan;
   verification: VerificationResult[];
   changedFiles: string[];
+  diff: string;
 }

@@ -25,7 +25,7 @@ export class LocalQwenModel {
       {
         role: "system",
         content:
-          "You are Methis, a conservative coding agent. Analyze the reported bug and return JSON only. Choose the smallest safe set of files. Never invent paths. Do not rewrite unrelated code. JSON keys: summary, files, reasoning.",
+          "You are Methis, a conservative coding agent. Analyze the reported bug and return JSON only. Choose the smallest safe set of existing files. Never invent paths. Never rewrite unrelated code. Return complete replacement content only for files that must change. JSON keys: summary, files, reasoning, changes. changes is an array of objects with path and content.",
       },
       {
         role: "user",
@@ -40,7 +40,7 @@ export class LocalQwenModel {
         model: this.model,
         messages,
         temperature: 0.1,
-        max_tokens: 2048,
+        max_tokens: 12000,
       }),
     });
 
@@ -57,13 +57,27 @@ export class LocalQwenModel {
     if (start < 0 || end <= start) throw new Error("Model did not return a JSON object.");
 
     const plan = JSON.parse(raw.slice(start, end + 1)) as FixPlan;
-    if (!plan.summary || !Array.isArray(plan.files) || typeof plan.reasoning !== "string") {
+    if (
+      !plan.summary ||
+      !Array.isArray(plan.files) ||
+      typeof plan.reasoning !== "string" ||
+      !Array.isArray(plan.changes)
+    ) {
       throw new Error("Model returned an invalid fix plan.");
     }
 
     const known = new Set(input.repository.files.map((file) => file.path));
     for (const file of plan.files) {
       if (!known.has(file)) throw new Error(`Model selected an unknown file: ${file}`);
+    }
+
+    for (const change of plan.changes) {
+      if (!change || typeof change.path !== "string" || typeof change.content !== "string") {
+        throw new Error("Model returned an invalid file change.");
+      }
+      if (!known.has(change.path)) {
+        throw new Error(`Model attempted to modify an unknown file: ${change.path}`);
+      }
     }
 
     return plan;
