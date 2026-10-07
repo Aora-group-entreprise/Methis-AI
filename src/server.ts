@@ -13,7 +13,7 @@ import { PLAN_LIMITS } from "./limits.js";
 
 const root=fileURLToPath(new URL("..",import.meta.url)), webRoot=join(root,"web");
 const model=new LocalQwenModel(), engine=new MethisEngine(model,new CommandVerifier());
-const port=Number(process.env.PORT||3000), secureCookies=process.env.NODE_ENV==="production";
+const port=Number(process.env.PORT||3000);
 
 function json(res:import("node:http").ServerResponse,status:number,body:unknown,extra:Record<string,string>={}){res.writeHead(status,{"content-type":"application/json; charset=utf-8","cache-control":"no-store",...extra});res.end(JSON.stringify(body));}
 async function body(req:import("node:http").IncomingMessage):Promise<any>{let raw="";for await(const chunk of req)raw+=chunk.toString();if(raw.length>100_000)throw new Error("Request too large.");return raw?JSON.parse(raw):{};}
