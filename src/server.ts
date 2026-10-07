@@ -32,6 +32,10 @@ async function api(req:import("node:http").IncomingMessage,res:import("node:http
 
     const a=requireAccount(await account(req));
     const data=await body(req);
+    const problemText=String(data.problem||"").trim();
+    if((req.url==="/api/fix"||req.url==="/api/github-fix") && /\b(fix|repair|fixe)\b.*\b(all|everything|entire|whole|toute|tout)\b|\b(all|everything|entire|whole|toute|tout)\b.*\b(app|application|repo|repository|codebase)\b/i.test(problemText)){
+      return json(res,400,{error:"One Fix credit can repair one specific bug only. Describe one concrete bug; Méthis will not perform a whole-app repair."});
+    }
 
     if(req.url==="/api/analyze"){
       const input=repositoryInput(String(data.repository||""));
@@ -43,20 +47,18 @@ async function api(req:import("node:http").IncomingMessage,res:import("node:http
     }
 
     if(req.url==="/api/github-fix"){
-      if(a.plan==="free")return json(res,402,{error:"GitHub Fix requires a paid plan. Payment is not connected yet, so no upgrade is charged or simulated."});
-      const repository=String(data.repository||"").trim(),problem=String(data.problem||"").trim()||"Analyze this repository and identify the smallest safe fix for the reported problem.";
+      const repository=String(data.repository||"").trim(),problem=problemText||"Describe one specific bug to fix.";
       if(!repository)return json(res,400,{error:"Repository is required."});
       const remote=await loadGitHubRepository(repository.replace(/^github(-fix)?:/,""));
-      const usage=await consume(a,"fixes");
       const plan=await model.plan({repository:{root:`github://${remote.repository.owner}/${remote.repository.name}`,files:remote.files,packageManagers:[],testCommands:[],buildCommands:[]},bug:{description:problem}});
-      if(!plan.edits.length)return json(res,422,{error:"Méthis produced no safe edits. No Pull Request was created.",summary:plan.summary});
+      if(!plan.edits.length)return json(res,422,{error:"Méthis produced no safe edits. No Fix credit was consumed and no Pull Request was created.",summary:plan.summary});
+      const usage=await consume(a,"fixes");
       const pr=await createFixPullRequest(remote.repository,plan);
       return json(res,201,{mode:"github-fix",repository:remote.repository,summary:plan.summary,changedFiles:[...new Set(plan.edits.map(e=>e.path))],branch:pr.branch,commit:pr.commit,pullRequest:pr.prUrl,pullRequestNumber:pr.prNumber,verification:pr.verification,usage,plan:a.plan});
     }
 
     if(req.url==="/api/fix"){
-      if(a.plan==="free")return json(res,402,{error:"Verified fixes require a paid plan. Payment is not connected yet."});
-      const local=String(data.localPath||"").trim(),bug=String(data.problem||"Analyze this repository and identify the smallest safe fix for the reported problem.");
+      const local=String(data.localPath||"").trim(),bug=problemText||"Describe one specific bug to fix.";
       if(process.env.METHIS_ENABLE_LOCAL_FIX!=="true")return json(res,403,{error:"Local verified fixes are disabled on the web server. Use an approved workspace integration."});
       if(!local)return json(res,400,{error:"A local workspace path is required for verified local fixes."});
       const root=process.env.METHIS_WORKSPACE_ROOT;
@@ -66,7 +68,7 @@ async function api(req:import("node:http").IncomingMessage,res:import("node:http
       return json(res,200,{...result,usage,plan:a.plan});
     }
     return json(res,404,{error:"Unknown endpoint."});
-  }catch(error){const message=error instanceof Error?error.message:"Request failed.";const status=/Authentication required|Invalid email|already exists|valid email|Password must|Invalid email or password/.test(message)?401:/Daily /.test(message)?429:500;return json(res,status,{error:message});}
+  }catch(error){const message=error instanceof Error?error.message:"Request failed.";const status=/Authentication required|Invalid email|already exists|valid email|Password must|Invalid email or password/.test(message)?401:/Daily |No Fix credit|Fix credit/.test(message)?429:500;return json(res,status,{error:message});}
 }
 
 async function staticFile(req:import("node:http").IncomingMessage,res:import("node:http").ServerResponse){
