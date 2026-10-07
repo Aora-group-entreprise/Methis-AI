@@ -26,9 +26,7 @@ async function api(req:import("node:http").IncomingMessage,res:import("node:http
     if(req.method==="GET"&&req.url==="/api/health"){const qwen=await model.health();return json(res,200,{ok:true,engine:"Méthis AI",model:model.config.model,qwen});}
     if(req.method==="GET"&&req.url==="/api/plans")return json(res,200,{plans:planInfo()});
     if(req.method==="GET"&&req.url==="/api/auth/me"){const a=await account(req);return json(res,200,{authenticated:!!a,account:a?publicAccount(a):null});}
-    if(req.method==="POST"&&req.url==="/api/auth/register"){const d=await body(req);const result=await register(String(d.email||""),String(d.password||""));return json(res,201,{account:publicAccount(result.account)},{set-cookie:sessionCookie(result.token,secureCookies)});}
-    if(req.method==="POST"&&req.url==="/api/auth/login"){const d=await body(req);const result=await login(String(d.email||""),String(d.password||""));return json(res,200,{account:publicAccount(result.account)},{set-cookie:sessionCookie(result.token,secureCookies)});}
-    if(req.method==="POST"&&req.url==="/api/auth/logout")return json(res,200,{ok:true},{ "set-cookie":clearSessionCookie(secureCookies) });
+    if(req.url?.startsWith("/api/auth/"))return json(res,410,{error:"Méthis authentication is managed by Supabase Auth. Use the Supabase client session."});
     if(req.method!=="POST")return json(res,405,{error:"Method not allowed"});
 
     const a=requireAccount(await account(req));
