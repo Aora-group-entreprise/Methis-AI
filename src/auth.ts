@@ -6,7 +6,7 @@ import { FIX_RELEASE_DAYS, PLAN_LIMITS } from "./limits.js";
 export type Plan = keyof typeof PLAN_LIMITS;
 export interface Account { id:string; email:string; passwordHash:string; salt:string; plan:Plan; createdAt:string; usage:{day:string; analyses:number; fixes:number}; billingCycleStartedAt?:string; fixCycleKey?:string; }
 const dataFile=join(process.cwd(),"data","accounts.json");
-const secret=process.env.METHIS_SESSION_SECRET || randomBytes(32).toString("hex");
+const secret=process.env.METHIS_SESSION_SECRET || (process.env.NODE_ENV==="production" ? (()=>{ throw new Error("METHIS_SESSION_SECRET must be set in production."); })() : randomBytes(32).toString("hex"));
 
 let accounts:Account[]|null=null;
 
