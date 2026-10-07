@@ -37,7 +37,7 @@ function parseRepository(input: string): GitHubRepository {
     throw new Error("GitHub repository must look like owner/repository.");
   }
 
-  return { owner: parts[0], name: parts[1], ref: parts[2] };
+  return { owner: parts[0], name: parts[1], ref: parts.slice(2).join("/") || undefined };
 }
 
 async function githubRequest<T>(url: string): Promise<T> {
@@ -46,14 +46,12 @@ async function githubRequest<T>(url: string): Promise<T> {
     accept: "application/vnd.github+json",
     "user-agent": "methis-ai",
   };
-
   if (token) headers.authorization = `Bearer ${token}`;
 
   const response = await fetch(url, { headers });
   if (!response.ok) {
     throw new Error(`GitHub request failed: ${response.status} ${await response.text()}`);
   }
-
   return (await response.json()) as T;
 }
 
@@ -63,15 +61,21 @@ export async function loadGitHubRepository(input: string): Promise<{
 }> {
   const repository = parseRepository(input);
   const ref = encodeURIComponent(repository.ref ?? "HEAD");
-  const treeUrl = `https://api.github.com/repos/${repository.owner}/${repository.name}/git/trees/${ref}?recursive=1`;
-  const tree = await githubRequest<GitTreeResponse>(treeUrl);
+  const tree = await githubRequest<GitTreeResponse>(
+    `https://api.github.com/repos/${repository.owner}/${repository.name}/git/trees/${ref}?recursive=1`,
+  );
 
   if (tree.truncated) {
     throw new Error("GitHub returned a truncated repository tree. Reduce the repository size before using Méthis.");
   }
 
   const entries = (tree.tree ?? []).filter(
-    (item) => item.type === "blob" && item.path && item.sha,
+    (item) =>
+      item.type === "blob" &&
+      item.path &&
+      item.sha &&
+      !/(^|\/)(?:\.env(?:\..*)?|.*(?:secret|credential).*)$/i.test(item.path) &&
+      !/\.(?:pem|key|p12|pfx)$/i.test(item.path),
   );
 
   if (entries.length > MAX_FILES) {
@@ -79,8 +83,10 @@ export async function loadGitHubRepository(input: string): Promise<{
   }
 
   const files: RepositoryFile[] = [];
+  const queue = [...entries];
 
-  for (const entry of entries) {
+  for (let index = 0; index < queue.length; index += 1) {
+    const entry = queue[index];
     if ((entry.size ?? 0) > MAX_FILE_SIZE) continue;
 
     const blob = await githubRequest<GitBlobResponse>(
@@ -90,10 +96,13 @@ export async function loadGitHubRepository(input: string): Promise<{
     if (blob.encoding !== "base64" || !blob.content) continue;
 
     const content = Buffer.from(blob.content.replace(/\s/g, ""), "base64").toString("utf8");
+    const language = languageFor(entry.path!);
+    if (language === "unknown") continue;
+
     files.push({
       path: entry.path!,
       size: Buffer.byteLength(content),
-      language: languageFor(entry.path!),
+      language,
       content,
     });
   }

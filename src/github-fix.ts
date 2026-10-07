@@ -1,9 +1,18 @@
 import type { FixPlan } from "./types.js";
 import type { GitHubRepository } from "./github.js";
+import { createBranch, createCommit, createTree, getBaseRef, fetchFile } from "./github-write.js";
 
-interface RefResponse { object: { sha: string } }
-interface CommitResponse { sha: string; tree: { sha: string } }
-interface PullResponse { html_url: string; number: number; draft?: boolean }
+export interface PullRequestResult {
+  branch: string;
+  commit: string;
+  prUrl: string;
+  prNumber: number;
+  verification: "static-only";
+}
+
+function api(repository: GitHubRepository, path: string): string {
+  return `https://api.github.com/repos/${repository.owner}/${repository.name}${path}`;
+}
 
 function headers(): Record<string, string> {
   const token = process.env.GITHUB_TOKEN;
@@ -24,64 +33,50 @@ async function request<T>(url: string, init: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-function api(repo: GitHubRepository, path: string): string {
-  return `https://api.github.com/repos/${repo.owner}/${repo.name}${path}`;
+function branchName(): string {
+  return `methis/fix-${Date.now().toString(36)}`;
 }
 
-function branchName(): string {
-  const stamp = new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14);
-  return `methis/fix-${stamp}`;
+function applyEditsToContent(path: string, content: string, edits: FixPlan["edits"]): string {
+  let result = content;
+  for (const edit of edits.filter((item) => item.path === path)) {
+    const occurrences = result.split(edit.oldText).length - 1;
+    if (occurrences !== 1) {
+      throw new Error(`Remote patch for ${path} must match exactly once.`);
+    }
+    result = result.replace(edit.oldText, edit.newText);
+  }
+  return result;
 }
 
 export async function createFixPullRequest(
   repository: GitHubRepository,
   plan: FixPlan,
-): Promise<{ branch: string; commit: string; prUrl: string; prNumber: number }> {
+): Promise<PullRequestResult> {
   const base = repository.ref && repository.ref !== "HEAD" ? repository.ref : "main";
-  const baseRef = await request<RefResponse>(api(repository, `/git/ref/heads/${encodeURIComponent(base)}`), {
-    method: "GET",
-  });
-  const baseSha = baseRef.object.sha;
+  const baseRef = await getBaseRef(repository, base);
   const branch = branchName();
 
-  await request(api(repository, "/git/refs"), {
-    method: "POST",
-    body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: baseSha }),
-  });
+  await createBranch(repository, branch, baseRef.sha);
 
-  const treeItems: Array<Record<string, string>> = [];
-  for (const change of plan.changes) {
-    const blob = await request<{ sha: string }>(api(repository, "/git/blobs"), {
-      method: "POST",
-      body: JSON.stringify({ content: change.content, encoding: "utf-8" }),
+  const paths = [...new Set(plan.edits.map((edit) => edit.path))];
+  const treeElements: Array<Record<string, string>> = [];
+
+  for (const path of paths) {
+    const file = await fetchFile(repository, path, base);
+    const content = applyEditsToContent(path, file.content, plan.edits);
+    treeElements.push({
+      path,
+      mode: "100644",
+      type: "blob",
+      content,
     });
-    treeItems.push({ path: change.path, mode: "100644", type: "blob", sha: blob.sha });
   }
 
-  const baseCommit = await request<CommitResponse>(api(repository, `/git/commits/${baseSha}`), {
-    method: "GET",
-  });
+  const tree = await createTree(repository, treeElements, baseRef.treeSha);
+  const commit = await createCommit(repository, `fix: ${plan.summary.slice(0, 72)}`, tree.sha, baseRef.sha);
 
-  const tree = await request<{ sha: string }>(api(repository, "/git/trees"), {
-    method: "POST",
-    body: JSON.stringify({ base_tree: baseCommit.tree.sha, tree: treeItems }),
-  });
-
-  const commit = await request<{ sha: string }>(api(repository, "/git/commits"), {
-    method: "POST",
-    body: JSON.stringify({
-      message: `fix: ${plan.summary.slice(0, 72)}`,
-      tree: tree.sha,
-      parents: [baseSha],
-    }),
-  });
-
-  await request(api(repository, `/git/refs/heads/${encodeURIComponent(branch)}`), {
-    method: "PATCH",
-    body: JSON.stringify({ sha: commit.sha, force: false }),
-  });
-
-  const pr = await request<PullResponse>(api(repository, "/pulls"), {
+  const pr = await request<{ html_url: string; number: number }>(api(repository, "/pulls"), {
     method: "POST",
     body: JSON.stringify({
       title: `fix: ${plan.summary.slice(0, 70)}`,
@@ -95,12 +90,20 @@ export async function createFixPullRequest(
         "### Reasoning",
         plan.reasoning,
         "",
-        "This PR was created by Méthis on an isolated branch.",
-        "Repository CI should be used as the final verification gate before merge.",
+        "### Verification",
+        "Static patch validation passed against the current base files.",
+        "",
+        "This PR contains one Méthis commit and remains a draft until repository CI passes.",
       ].join("\n"),
       draft: true,
     }),
   });
 
-  return { branch, commit: commit.sha, prUrl: pr.html_url, prNumber: pr.number };
+  return {
+    branch,
+    commit: commit.sha,
+    prUrl: pr.html_url,
+    prNumber: pr.number,
+    verification: "static-only",
+  };
 }

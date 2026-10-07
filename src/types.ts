@@ -20,16 +20,17 @@ export interface BugReport {
   errorOutput?: string;
 }
 
-export interface FileChange {
+export interface FileEdit {
   path: string;
-  content: string;
+  oldText: string;
+  newText: string;
 }
 
 export interface FixPlan {
   summary: string;
   files: string[];
   reasoning: string;
-  changes: FileChange[];
+  edits: FileEdit[];
 }
 
 export interface VerificationResult {
@@ -44,4 +45,6 @@ export interface FixResult {
   verification: VerificationResult[];
   changedFiles: string[];
   diff: string;
+  attempts: number;
+  verified: boolean;
 }

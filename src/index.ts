@@ -1,4 +1,3 @@
-import { scanRepository } from "./scanner.js";
 import { LocalQwenModel } from "./model.js";
 import { CommandVerifier } from "./verifier.js";
 import { MethisEngine } from "./engine.js";
@@ -21,10 +20,7 @@ if (input.startsWith("github-fix:")) {
 
   const model = new LocalQwenModel();
   const plan = await model.plan({ repository, bug: { description: bug } });
-
-  if (!plan.changes.length) {
-    throw new Error("Méthis produced no file changes. No Pull Request was created.");
-  }
+  if (!plan.edits.length) throw new Error("Méthis produced no edits. No Pull Request was created.");
 
   const pr = await createFixPullRequest(remote.repository, plan);
   console.log(JSON.stringify({
@@ -32,12 +28,12 @@ if (input.startsWith("github-fix:")) {
     mode: "github-fix",
     repository: remote.repository,
     summary: plan.summary,
-    changedFiles: plan.changes.map((change) => change.path),
+    changedFiles: [...new Set(plan.edits.map((edit) => edit.path))],
     branch: pr.branch,
     commit: pr.commit,
     pullRequest: pr.prUrl,
     pullRequestNumber: pr.prNumber,
-    verification: "pending-github-ci",
+    verification: pr.verification,
   }, null, 2));
   process.exit(0);
 }
@@ -57,15 +53,9 @@ if (input.startsWith("github:") || /^https?:\/\/github\.com\//.test(input)) {
 if (process.argv.length > 3) {
   const engine = new MethisEngine(new LocalQwenModel(), new CommandVerifier());
   const result = await engine.fix(input, { description: bug });
-
-  console.log(JSON.stringify({
-    summary: result.plan.summary,
-    reasoning: result.plan.reasoning,
-    changedFiles: result.changedFiles,
-    verification: result.verification,
-    diff: result.diff,
-  }, null, 2));
+  console.log(JSON.stringify(result, null, 2));
 } else {
+  const { scanRepository } = await import("./scanner.js");
   const snapshot = await scanRepository(input);
   console.log(`Méthis scanned ${snapshot.files.length} files.`);
   console.log(JSON.stringify({

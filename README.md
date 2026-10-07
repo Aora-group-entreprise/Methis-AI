@@ -1,32 +1,32 @@
 # Méthis AI
 
-Méthis is a conservative AI coding agent designed to analyze a real repository, understand a bug, choose the smallest safe change, verify it, and later open a pull request.
+Méthis is a conservative local AI coding agent for real repositories. It scans source, plans a minimal edit, applies it in a disposable workspace, verifies it, retries bounded failures, and can prepare an isolated GitHub pull request.
 
-## Current engine
+## Pipeline
 
 ```
 Repository
    ↓
-Scanner + source context
+Scanner + protected-file filtering
    ↓
-Bug report
+Relevant source context
    ↓
 Local open-weight coding model
    ↓
-Validated fix plan
+Validated minimal edits
    ↓
-Patch workspace
+Disposable workspace
    ↓
-Typecheck / tests / build
+Verification
    ↓
-Diff
+Retry on failure (max 3)
    ↓
-Pull Request
+Diff / Pull Request
 ```
 
-The first model adapter uses an OpenAI-compatible local HTTP endpoint and defaults to **Qwen/Qwen3-Coder-Next**. Méthis does not call OpenAI, Anthropic, Gemini, Cursor, or Replit Agent APIs.
+The default model adapter uses an OpenAI-compatible local HTTP endpoint and defaults to **Qwen/Qwen3-Coder-Next**. No paid AI API is required.
 
-Default model endpoint:
+Default endpoint:
 
 `http://127.0.0.1:8000/v1/chat/completions`
 
@@ -34,16 +34,18 @@ Environment variables:
 
 - `METHIS_MODEL_URL`
 - `METHIS_MODEL`
-
-The model weights can be free/open-weight, but inference still needs compute. The goal is zero paid AI API usage, not magically zero compute cost.
+- `GITHUB_TOKEN` for GitHub write operations
 
 ## Safety boundaries
 
-- Repository files are scanned with a 2 MB per-file limit.
-- Generated plans may only reference files that exist in the scanned repository.
-- Verification commands have a 120 second timeout.
-- The production worker will use an isolated temporary workspace and clean it after every job.
-- No private keys or seed phrases are ever accepted by the agent.
+- Secret-like files are excluded from model context.
+- Source files are capped at 2 MB each and repositories at 2,000 files.
+- Model edits must target existing files and exact unique text.
+- Whole-file rewrites, new files, path traversal, and protected secret files are rejected.
+- Verification never uses a shell and receives a reduced environment without repository secrets.
+- Verification is bounded to 120 seconds per command.
+- GitHub fixes use a fresh branch and one Git commit containing the patch, then open a draft PR.
+- Remote GitHub fixes are statically validated before the PR is created; repository CI remains the final merge gate.
 
 ## Development
 
@@ -53,7 +55,3 @@ npm run typecheck
 npm run build
 node dist/index.js .
 ```
-
-## Status
-
-This commit adds the local model adapter, source-aware planning agent, and deterministic verification runner. Patch application, isolated GitHub workspaces, authentication, crypto entitlement verification, and pull-request creation are the next engine layers.
