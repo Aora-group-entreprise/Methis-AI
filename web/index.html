@@ -104,11 +104,43 @@ function renderAccount(){const user=account?account.email.split("@")[0]:"Guest";
 async function refreshAccount(){const {data:{session}}=await supabase.auth.getSession(); if(!session){account=null;renderAccount();return false;} account={email:session.user.email||"User"}; try{const r=await apiFetch("/api/auth/me");if(r.ok){const d=await r.json();if(d.account)account=d.account;}}catch{} renderAccount(); return true;}
 supabase.auth.onAuthStateChange((event,session)=>{setTimeout(async()=>{if(session){await refreshAccount();showDashboard();}else{account=null;renderAccount();showLanding();}if(event==="SIGNED_IN"||event==="INITIAL_SESSION"){const hash=window.location.hash;const hasAuthHash=hash.includes("access_token")||hash.includes("code=");if(hasAuthHash){history.replaceState(null,"",window.location.pathname+window.location.search);showDashboard();$("status").textContent="● Signed in";}}},0)});
 refreshAccount();
-let mode="analyze";document.querySelectorAll(".mode").forEach(b=>b.onclick=()=>{document.querySelectorAll(".mode").forEach(x=>x.classList.remove("active"));b.classList.add("active");mode=b.dataset.mode;$("#analyzeBtn").textContent=mode==="fix"?"Prepare GitHub Fix →":"Analyze →"});
-async function analyze(){const repository=$("#repo").value.trim();if(!repository)return;if(!account){$("#account").scrollIntoView({behavior:"smooth"});return alert("Create an account or log in first.");}showDashboard();$("#dashRepoInput").value=repository;setChatMode("analyze");addUserMessage(repository);runAgent("analyze",repository);}
-$("#analyzeBtn").onclick=()=>{if(mode==="fix"){githubFix()}else analyze()};
-async function githubFix(){const repository=$("#repo").value.trim();const problem=$("#problem").value.trim()||"Describe one specific bug to fix.";if(!repository)return;if(!account){$("#account").scrollIntoView({behavior:"smooth"});return alert("Create an account or log in first.");}showDashboard();setChatMode("fix");$("#chatInput").value=repository;$("#chatInput").dataset.mode="fix";addUserMessage(repository);runAgent("fix",repository,problem);}
-$("#githubFixShortcut").onclick=()=>{$("#repo").focus();document.querySelectorAll(".mode").forEach(x=>x.classList.toggle("active",x.dataset.mode==="fix"));mode="fix";$("#analyzeBtn").textContent="Prepare GitHub Fix →";$("#analyze").scrollIntoView({behavior:"smooth"});};document.querySelectorAll(".mode").forEach(x=>x.classList.toggle("active",x.dataset.mode==="fix"));mode="fix";$("#analyzeBtn").textContent="Prepare GitHub Fix →";$("#analyze").scrollIntoView({behavior:"smooth"});};
+let mode="analyze";
+document.querySelectorAll(".mode").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".mode").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  mode=b.dataset.mode;
+  $("#analyzeBtn").textContent=mode==="fix"?"Prepare GitHub Fix →":"Analyze →";
+});
+async function analyze(){
+  const repository=$("#repo").value.trim();
+  if(!repository)return;
+  if(!account){$("#account").scrollIntoView({behavior:"smooth"});return alert("Create an account or log in first.");}
+  showDashboard();
+  $("#dashRepoInput").value=repository;
+  setChatMode("analyze");
+  addUserMessage(repository);
+  runAgent("analyze",repository);
+}
+$("#analyzeBtn").onclick=()=>mode==="fix"?githubFix():analyze();
+async function githubFix(){
+  const repository=$("#repo").value.trim();
+  const problem=$("#problem").value.trim()||"Describe one specific bug to fix.";
+  if(!repository)return;
+  if(!account){$("#account").scrollIntoView({behavior:"smooth"});return alert("Create an account or log in first.");}
+  showDashboard();
+  setChatMode("fix");
+  $("#chatInput").value=repository;
+  $("#chatInput").dataset.mode="fix";
+  addUserMessage(repository);
+  runAgent("fix",repository,problem);
+}
+$("#githubFixShortcut").onclick=()=>{
+  $("#repo").focus();
+  document.querySelectorAll(".mode").forEach(x=>x.classList.toggle("active",x.dataset.mode==="fix"));
+  mode="fix";
+  $("#analyzeBtn").textContent="Prepare GitHub Fix →";
+  $("#analyze").scrollIntoView({behavior:"smooth"});
+};
 $("#accountBtn").onclick=async()=>{const email=$("#email").value.trim(),password=$("#password").value;if(!email||password.length<8)return alert("Enter a valid email and a password of at least 8 characters.");const {data,error}=await supabase.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin}});if(error)return alert(error.message);if(!data.session)return alert("Account created. Check your email to confirm the account. After confirmation, Méthis will return you to the home page. Then use Log in if the session is not restored automatically.");account=null;await refreshAccount();showDashboard();};
 $("#logoutBtn").onclick=async()=>{const {error}=await supabase.auth.signOut();if(error)return alert(error.message);account=null;renderAccount();showLanding();};
 $("#googleBtn").onclick=async()=>{const {error}=await supabase.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin,queryParams:{prompt:"select_account"}}});if(error)alert(error.message);};
