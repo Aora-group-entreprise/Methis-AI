@@ -18,7 +18,7 @@ const port=Number(process.env.PORT||3000);
 function json(res:import("node:http").ServerResponse,status:number,body:unknown,extra:Record<string,string>={}){res.writeHead(status,{"content-type":"application/json; charset=utf-8","cache-control":"no-store",...extra});res.end(JSON.stringify(body));}
 async function body(req:import("node:http").IncomingMessage):Promise<any>{let raw="";for await(const chunk of req)raw+=chunk.toString();if(raw.length>100_000)throw new Error("Request too large.");return raw?JSON.parse(raw):{};}
 function repositoryInput(value:string){const raw=value.trim();if(raw.startsWith("github:")||raw.startsWith("github-fix:"))return raw;return "github:"+raw;}
-async function account(req:import("node:http").IncomingMessage){return current(cookieToken(req.headers.cookie));}
+async function account(req:import("node:http").IncomingMessage){return current(bearerToken(req.headers.authorization));}
 function requireAccount(a:Awaited<ReturnType<typeof account>>){if(!a)throw new Error("Authentication required.");return a;}
 
 async function api(req:import("node:http").IncomingMessage,res:import("node:http").ServerResponse){
