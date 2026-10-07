@@ -1,6 +1,6 @@
 import type { FixPlan } from "./types.js";
 import type { GitHubRepository } from "./github.js";
-import { createBranch, createCommit, createTree, getBaseRef, fetchFile } from "./github-write.js";
+import { createBranch, createCommit, createTree, getBaseRef, getDefaultBranch, fetchFile } from "./github-write.js";
 
 export interface PullRequestResult {
   branch: string;
@@ -53,7 +53,7 @@ export async function createFixPullRequest(
   repository: GitHubRepository,
   plan: FixPlan,
 ): Promise<PullRequestResult> {
-  const base = repository.ref && repository.ref !== "HEAD" ? repository.ref : "main";
+  const base = repository.ref && repository.ref !== "HEAD" ? repository.ref : await getDefaultBranch(repository);
   const baseRef = await getBaseRef(repository, base);
   const branch = branchName();
 

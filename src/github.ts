@@ -33,8 +33,11 @@ function parseRepository(input: string): GitHubRepository {
     .replace(/\/$/, "");
 
   const parts = clean.split("/");
-  if (parts.length < 2 || !parts[0] || !parts[1]) {
+  if (parts.length < 2 || parts.length > 2 + 8 || !parts[0] || !parts[1]) {
     throw new Error("GitHub repository must look like owner/repository.");
+  }
+  if (!/^[A-Za-z0-9_.-]+$/.test(parts[0]) || !/^[A-Za-z0-9_.-]+$/.test(parts[1])) {
+    throw new Error("Invalid GitHub repository name.");
   }
 
   return { owner: parts[0], name: parts[1], ref: parts.slice(2).join("/") || undefined };

@@ -14,6 +14,7 @@ interface ContentResponse {
   encoding?: string;
   sha?: string;
 }
+interface RepositoryResponse { default_branch?: string; }
 
 function headers(): Record<string, string> {
   const token = process.env.GITHUB_TOKEN;
@@ -36,6 +37,12 @@ async function request<T>(url: string, init: RequestInit): Promise<T> {
 
 function api(repo: GitHubRepository, path: string): string {
   return `https://api.github.com/repos/${repo.owner}/${repo.name}${path}`;
+}
+
+export async function getDefaultBranch(repository: GitHubRepository): Promise<string> {
+  const response = await request<RepositoryResponse>(api(repository, ""), { method: "GET" });
+  if (!response.default_branch) throw new Error("GitHub repository has no default branch.");
+  return response.default_branch;
 }
 
 export async function getBaseRef(repository: GitHubRepository, base: string): Promise<{ sha: string; treeSha: string }> {
