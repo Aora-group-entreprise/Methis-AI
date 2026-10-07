@@ -321,8 +321,8 @@ body.drawer-open .drawer{transform:translateX(0)}
     document.getElementById('infoClose').onclick=()=>document.getElementById('infoModal').hidden=true;
     document.getElementById('infoModal').addEventListener('click',e=>{if(e.target.id==='infoModal')e.target.hidden=true});
 
-    document.getElementById('analyzeItem').addEventListener('click',()=>{closeDrawer();setAction('analyze');analyzeRepository()});
-    document.getElementById('fixItem').addEventListener('click',()=>{closeDrawer();setAction('fix');fixRepository()});
+    document.getElementById('analyzeItem').addEventListener('click',()=>{setAction('analyze');closeDrawer();analyzeRepository()});
+    document.getElementById('fixItem').addEventListener('click',()=>{setAction('fix');closeDrawer();fixRepository()});
     document.getElementById('dashboardItem').addEventListener('click',openDashboard);
     document.getElementById('signinItem').addEventListener('click',()=>showAuth('signin'));
     document.getElementById('signupItem').addEventListener('click',()=>showAuth('signup'));
@@ -334,8 +334,8 @@ body.drawer-open .drawer{transform:translateX(0)}
       selectedAction = action;
       const field=document.getElementById('repository');
       field.placeholder = action === 'fix'
-        ? 'Paste your GitHub repository to fix\nhttps://github.com/owner/repository'
-        : 'Paste your GitHub repository to analyze\nhttps://github.com/owner/repository';
+        ? 'Paste your GitHub repository to fix\\nhttps://github.com/owner/repository'
+        : 'Paste your GitHub repository to analyze\\nhttps://github.com/owner/repository';
       document.getElementById('analyze').setAttribute('aria-pressed', String(action === 'analyze'));
       document.getElementById('fix').setAttribute('aria-pressed', String(action === 'fix'));
       field.focus();
