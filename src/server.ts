@@ -32,6 +32,10 @@ async function api(req:import("node:http").IncomingMessage,res:import("node:http
 
     const a=requireAccount(await account(req));
     const data=await body(req);
+    const problemText=String(data.problem||"").trim();
+    if((req.url==="/api/fix"||req.url==="/api/github-fix") && /\\b(fix|repair|fixe)\\b.*\\b(all|everything|entire|whole|toute|tout)\\b|\\b(all|everything|entire|whole|toute|tout)\\b.*\\b(app|application|repo|repository|codebase)\\b/i.test(problemText)){
+      return json(res,400,{error:"One Fix credit can repair one specific bug only. Describe one concrete bug; Méthis will not perform a whole-app repair."});
+    }
 
     if(req.url==="/api/analyze"){
       const input=repositoryInput(String(data.repository||""));
@@ -43,8 +47,8 @@ async function api(req:import("node:http").IncomingMessage,res:import("node:http
     }
 
     if(req.url==="/api/github-fix"){
-      if(a.plan==="free")return json(res,402,{error:"GitHub Fix requires a paid plan. Payment is not connected yet, so no upgrade is charged or simulated."});
-      const repository=String(data.repository||"").trim(),problem=String(data.problem||"").trim()||"Analyze this repository and identify the smallest safe fix for the reported problem.";
+      if(a.plan==="free")return json(res,402,{error:"GitHub Fix requires the $1 Crypto/month plan. Payment is not connected yet, so no upgrade is charged or simulated."});
+      const repository=String(data.repository||"").trim(),problem=problemText||"Describe one specific bug to fix.";
       if(!repository)return json(res,400,{error:"Repository is required."});
       const remote=await loadGitHubRepository(repository.replace(/^github(-fix)?:/,""));
       const usage=await consume(a,"fixes");
@@ -55,8 +59,8 @@ async function api(req:import("node:http").IncomingMessage,res:import("node:http
     }
 
     if(req.url==="/api/fix"){
-      if(a.plan==="free")return json(res,402,{error:"Verified fixes require a paid plan. Payment is not connected yet."});
-      const local=String(data.localPath||"").trim(),bug=String(data.problem||"Analyze this repository and identify the smallest safe fix for the reported problem.");
+      if(a.plan==="free")return json(res,402,{error:"Verified fixes require the $1 Crypto/month plan. Payment is not connected yet."});
+      const local=String(data.localPath||"").trim(),bug=problemText||"Describe one specific bug to fix.";
       if(process.env.METHIS_ENABLE_LOCAL_FIX!=="true")return json(res,403,{error:"Local verified fixes are disabled on the web server. Use an approved workspace integration."});
       if(!local)return json(res,400,{error:"A local workspace path is required for verified local fixes."});
       const root=process.env.METHIS_WORKSPACE_ROOT;
