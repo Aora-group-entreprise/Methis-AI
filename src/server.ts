@@ -8,17 +8,17 @@ import { CommandVerifier } from "./verifier.js";
 import { MethisEngine } from "./engine.js";
 import { loadGitHubRepository } from "./github.js";
 import { createFixPullRequest } from "./github-fix.js";
-import { clearSessionCookie, consume, cookieToken, current, login, planInfo, publicAccount, register, sessionCookie } from "./auth.js";
+import { bearerToken, consume, current, planInfo, publicAccount } from "./auth.js";
 import { PLAN_LIMITS } from "./limits.js";
 
 const root=fileURLToPath(new URL("..",import.meta.url)), webRoot=join(root,"web");
 const model=new LocalQwenModel(), engine=new MethisEngine(model,new CommandVerifier());
-const port=Number(process.env.PORT||3000), secureCookies=process.env.NODE_ENV==="production";
+const port=Number(process.env.PORT||3000);
 
 function json(res:import("node:http").ServerResponse,status:number,body:unknown,extra:Record<string,string>={}){res.writeHead(status,{"content-type":"application/json; charset=utf-8","cache-control":"no-store",...extra});res.end(JSON.stringify(body));}
 async function body(req:import("node:http").IncomingMessage):Promise<any>{let raw="";for await(const chunk of req)raw+=chunk.toString();if(raw.length>100_000)throw new Error("Request too large.");return raw?JSON.parse(raw):{};}
 function repositoryInput(value:string){const raw=value.trim();if(raw.startsWith("github:")||raw.startsWith("github-fix:"))return raw;return "github:"+raw;}
-async function account(req:import("node:http").IncomingMessage){return current(cookieToken(req.headers.cookie));}
+async function account(req:import("node:http").IncomingMessage){return current(bearerToken(req.headers.authorization));}
 function requireAccount(a:Awaited<ReturnType<typeof account>>){if(!a)throw new Error("Authentication required.");return a;}
 
 async function api(req:import("node:http").IncomingMessage,res:import("node:http").ServerResponse){
@@ -26,9 +26,7 @@ async function api(req:import("node:http").IncomingMessage,res:import("node:http
     if(req.method==="GET"&&req.url==="/api/health"){const qwen=await model.health();return json(res,200,{ok:true,engine:"Méthis AI",model:model.config.model,qwen});}
     if(req.method==="GET"&&req.url==="/api/plans")return json(res,200,{plans:planInfo()});
     if(req.method==="GET"&&req.url==="/api/auth/me"){const a=await account(req);return json(res,200,{authenticated:!!a,account:a?publicAccount(a):null});}
-    if(req.method==="POST"&&req.url==="/api/auth/register"){const d=await body(req);const result=await register(String(d.email||""),String(d.password||""));return json(res,201,{account:publicAccount(result.account)},{set-cookie:sessionCookie(result.token,secureCookies)});}
-    if(req.method==="POST"&&req.url==="/api/auth/login"){const d=await body(req);const result=await login(String(d.email||""),String(d.password||""));return json(res,200,{account:publicAccount(result.account)},{set-cookie:sessionCookie(result.token,secureCookies)});}
-    if(req.method==="POST"&&req.url==="/api/auth/logout")return json(res,200,{ok:true},{ "set-cookie":clearSessionCookie(secureCookies) });
+    if(req.url?.startsWith("/api/auth/"))return json(res,410,{error:"Méthis authentication is managed by Supabase Auth. Use the Supabase client session."});
     if(req.method!=="POST")return json(res,405,{error:"Method not allowed"});
 
     const a=requireAccount(await account(req));
