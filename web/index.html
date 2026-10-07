@@ -14,7 +14,7 @@ button,textarea{font:inherit}
 button{cursor:pointer}
 .page{width:100%;max-width:520px;margin:0 auto;padding:0 24px 32px}
 .header{height:68px;display:flex;align-items:center;justify-content:space-between}
-.brand{display:flex;align-items:center;gap:9px;font-size:16px;font-weight:700;letter-spacing:-.025em}
+.brand{display:flex;align-items:center;gap:9px;font-size:16px;font-weight:700;letter-spacing:-.025em}.brand .logo{order:2}
 .logo{width:30px;height:30px;display:block;object-fit:contain}
 .account{width:36px;height:36px;border:1px solid #2A2E4A;border-radius:50%;background:transparent;color:#fff;display:grid;place-items:center;padding:0}
 .account svg{width:18px;height:18px}
@@ -51,7 +51,7 @@ button{cursor:pointer}
 <body>
   <main class="page">
     <header class="header">
-      <div class="brand"><img class="logo" src="/file_0000000081f88208bb42c3ed7879a73a.png" alt="Methis AI logo"><span>Methis AI</span></div>
+      <div class="brand"><span>Methis AI</span><img class="logo" src="/file_0000000081f88208bb42c3ed7879a73a.png" alt="Methis AI logo"></div>
       <button class="account" aria-label="Account">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20c.7-3.6 2.8-5.5 6.5-5.5s5.8 1.9 6.5 5.5"/></svg>
       </button>
