@@ -8,7 +8,7 @@ import { CommandVerifier } from "./verifier.js";
 import { MethisEngine } from "./engine.js";
 import { loadGitHubRepository } from "./github.js";
 import { createFixPullRequest } from "./github-fix.js";
-import { clearSessionCookie, consume, cookieToken, current, login, planInfo, publicAccount, register, sessionCookie } from "./auth.js";
+import { bearerToken, consume, current, planInfo, publicAccount } from "./auth.js";
 import { PLAN_LIMITS } from "./limits.js";
 
 const root=fileURLToPath(new URL("..",import.meta.url)), webRoot=join(root,"web");
