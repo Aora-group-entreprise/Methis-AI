@@ -6,7 +6,11 @@ import { createFixPullRequest } from "./github-fix.js";
 
 const input = process.argv[2] ?? process.cwd();
 const bug = process.argv.slice(3).join(" ") || "Analyze this repository and identify the smallest safe fix for the reported problem.";
-const githubInput = input.startsWith("github:") ? input.slice("github:".length) : input;
+const githubInput = input.startsWith("github-fix:")
+  ? input.slice("github-fix:".length)
+  : input.startsWith("github:")
+    ? input.slice("github:".length)
+    : input;
 
 if (input.startsWith("github-fix:")) {
   const remote = await loadGitHubRepository(githubInput);
