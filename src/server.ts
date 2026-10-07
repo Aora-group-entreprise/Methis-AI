@@ -34,36 +34,39 @@ async function api(req:import("node:http").IncomingMessage,res:import("node:http
     const data=await body(req);
 
     if(req.url==="/api/analyze"){
-      await consume(a,"analyses");
       const input=repositoryInput(String(data.repository||""));
       if(!input.slice(input.indexOf(":")+1).trim())return json(res,400,{error:"Repository is required."});
       const remote=await loadGitHubRepository(input.slice(input.indexOf(":")+1));
+      const usage=await consume(a,"analyses");
       const languages=[...new Set(remote.files.map(f=>f.language))];
-      return json(res,200,{engine:"Méthis AI",model:model.config.model,mode:"github-scan",repository:remote.repository,files:remote.files.length,languages,status:"ready",usage:a.usage,plan:a.plan});
+      return json(res,200,{engine:"Méthis AI",model:model.config.model,mode:"github-scan",repository:remote.repository,files:remote.files.length,languages,status:"ready",usage,plan:a.plan});
     }
 
     if(req.url==="/api/github-fix"){
       if(a.plan==="free")return json(res,402,{error:"GitHub Fix requires a paid plan. Payment is not connected yet, so no upgrade is charged or simulated."});
-      await consume(a,"fixes");
       const repository=String(data.repository||"").trim(),problem=String(data.problem||"").trim()||"Analyze this repository and identify the smallest safe fix for the reported problem.";
       if(!repository)return json(res,400,{error:"Repository is required."});
       const remote=await loadGitHubRepository(repository.replace(/^github(-fix)?:/,""));
+      const usage=await consume(a,"fixes");
       const plan=await model.plan({repository:{root:`github://${remote.repository.owner}/${remote.repository.name}`,files:remote.files,packageManagers:[],testCommands:[],buildCommands:[]},bug:{description:problem}});
       if(!plan.edits.length)return json(res,422,{error:"Méthis produced no safe edits. No Pull Request was created.",summary:plan.summary});
       const pr=await createFixPullRequest(remote.repository,plan);
-      return json(res,201,{mode:"github-fix",repository:remote.repository,summary:plan.summary,changedFiles:[...new Set(plan.edits.map(e=>e.path))],branch:pr.branch,commit:pr.commit,pullRequest:pr.prUrl,pullRequestNumber:pr.prNumber,verification:pr.verification,usage:a.usage,plan:a.plan});
+      return json(res,201,{mode:"github-fix",repository:remote.repository,summary:plan.summary,changedFiles:[...new Set(plan.edits.map(e=>e.path))],branch:pr.branch,commit:pr.commit,pullRequest:pr.prUrl,pullRequestNumber:pr.prNumber,verification:pr.verification,usage,plan:a.plan});
     }
 
     if(req.url==="/api/fix"){
       if(a.plan==="free")return json(res,402,{error:"Verified fixes require a paid plan. Payment is not connected yet."});
-      await consume(a,"fixes");
       const local=String(data.localPath||"").trim(),bug=String(data.problem||"Analyze this repository and identify the smallest safe fix for the reported problem.");
+      if(process.env.METHIS_ENABLE_LOCAL_FIX!=="true")return json(res,403,{error:"Local verified fixes are disabled on the web server. Use an approved workspace integration."});
       if(!local)return json(res,400,{error:"A local workspace path is required for verified local fixes."});
+      const root=process.env.METHIS_WORKSPACE_ROOT;
+      if(!root||!local.startsWith(normalize(root)))return json(res,403,{error:"The requested workspace is outside the configured Méthis workspace root."});
+      const usage=await consume(a,"fixes");
       const result=await engine.fix(local,{description:bug});
-      return json(res,200,{...result,usage:a.usage,plan:a.plan});
+      return json(res,200,{...result,usage,plan:a.plan});
     }
     return json(res,404,{error:"Unknown endpoint."});
-  }catch(error){const message=error instanceof Error?error.message:"Request failed.";const status=/Authentication required|Invalid email|already exists|valid email|Password must|Daily /.test(message)?401:500;return json(res,status,{error:message});}
+  }catch(error){const message=error instanceof Error?error.message:"Request failed.";const status=/Authentication required|Invalid email|already exists|valid email|Password must|Invalid email or password/.test(message)?401:/Daily /.test(message)?429:500;return json(res,status,{error:message});}
 }
 
 async function staticFile(req:import("node:http").IncomingMessage,res:import("node:http").ServerResponse){
