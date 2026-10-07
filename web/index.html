@@ -65,6 +65,8 @@ body.drawer-open .drawer{transform:translateX(0)}
 
 @media(max-width:380px){.page{padding-left:18px;padding-right:18px}.hero{padding-top:50px}.hero-logo{width:100px;height:100px}.hero h1{font-size:34px}.repo-box{height:120px}}
 </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3"></script>
 </head>
 <body>
   <main class="page">
@@ -138,24 +140,24 @@ body.drawer-open .drawer{transform:translateX(0)}
     </div>
 
     <nav class="drawer-nav">
-      <button class="drawer-item" id="dashboardItem">
+      <button class="drawer-item" id="dashboardItem" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>
         <span>Dashboard</span>
       </button>
-      <button class="drawer-item" id="signinItem">
+      <button class="drawer-item" id="signinItem" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 5H6.5A2.5 2.5 0 0 0 4 7.5v9A2.5 2.5 0 0 0 6.5 19H10"/><path d="M13 8l4 4-4 4"/><path d="M17 12H8"/></svg>
         <span>Sign in</span>
       </button>
-      <button class="drawer-item" id="signupItem">
+      <button class="drawer-item" id="signupItem" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c.7-3.4 2.5-5.2 5.5-5.2s4.8 1.8 5.5 5.2"/><path d="M18 10v6M15 13h6"/></svg>
         <span>Sign up</span>
       </button>
       <div class="drawer-divider"></div>
-      <button class="drawer-item" id="aboutItem">
+      <button class="drawer-item" id="aboutItem" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.5"/><path d="M12 10.5v5"/><circle cx="12" cy="7.2" r=".7" fill="currentColor" stroke="none"/></svg>
         <span>About</span>
       </button>
-      <button class="drawer-item" id="licenseItem">
+      <button class="drawer-item" id="licenseItem" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 3.8h8l3 3V20.2H7z"/><path d="M15 3.8v3h3M9.5 11h5M9.5 14.5h5M9.5 8h2"/></svg>
         <span>License</span>
       </button>
@@ -165,8 +167,51 @@ body.drawer-open .drawer{transform:translateX(0)}
     <div class="drawer-footer">Understand your code. Fix one problem at a time.</div>
   </aside>
 
+  <div id="appView" class="app-view" aria-live="polite"></div>
+
+  <div id="authModal" class="modal-backdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <button id="authClose" class="modal-close" aria-label="Close">×</button>
+      <div class="modal-logo"><img src="https://raw.githubusercontent.com/Aora-group-entreprise/Methis-AI/main/file_0000000081f88208bb42c3ed7879a73a.png" alt=""></div>
+      <h2 id="authTitle">Sign in</h2>
+      <p id="authSubtitle">Access your Methis AI account.</p>
+      <form id="authForm">
+        <input id="authEmail" type="email" autocomplete="email" placeholder="Email" required>
+        <input id="authPassword" type="password" autocomplete="current-password" placeholder="Password" minlength="6" required>
+        <button id="authSubmit" class="modal-primary" type="submit">Sign in</button>
+      </form>
+      <button id="authSwitch" class="modal-link" type="button">Create an account</button>
+      <div id="authStatus" class="auth-status" role="status"></div>
+    </section>
+  </div>
+
+  <div id="infoModal" class="modal-backdrop" hidden>
+    <section class="modal info-modal" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
+      <button id="infoClose" class="modal-close" aria-label="Close">×</button>
+      <h2 id="infoTitle"></h2>
+      <div id="infoBody" class="info-body"></div>
+    </section>
+  </div>
+
+  <style>
+.app-view{position:fixed;inset:0;background:#080C15;z-index:30;display:none;overflow:auto;padding:24px}
+.app-view.active{display:block}
+.app-screen{width:100%;max-width:520px;margin:0 auto}
+.app-screen-head{display:flex;align-items:center;gap:12px;margin-bottom:26px}
+.back-button{width:40px;height:40px;border:1px solid #2A2E4A;border-radius:11px;background:#12162A;color:#fff}
+.app-screen h2{font-size:28px;margin:0}.app-card{background:#12162A;border:1px solid #2A2E4A;border-radius:16px;padding:20px;margin-top:14px}
+.account-email{color:#8A8ED6;font-size:13px;margin-top:6px}.dashboard-stat{display:flex;justify-content:space-between;padding:13px 0;border-bottom:1px solid #2A2E4A;font-size:13px}.dashboard-stat:last-child{border-bottom:0}
+.signout{width:100%;height:44px;margin-top:18px;border:1px solid #2A2E4A;border-radius:11px;background:transparent;color:#fff}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.68);z-index:40;display:grid;place-items:center;padding:20px}.modal-backdrop[hidden]{display:none}
+.modal{position:relative;width:min(100%,390px);background:#0D1120;border:1px solid #2A2E4A;border-radius:20px;padding:28px 20px 22px;box-shadow:0 25px 80px rgba(0,0,0,.55)}
+.modal-close{position:absolute;right:14px;top:12px;width:34px;height:34px;border:0;background:transparent;color:#fff;font-size:25px}.modal-logo{text-align:center}.modal-logo img{width:58px;height:58px;object-fit:contain}.modal h2{text-align:center;margin:12px 0 6px;font-size:25px}.modal>p{text-align:center;color:#8A8ED6;font-size:12px;margin:0 0 20px}
+#authForm{display:grid;gap:11px}.modal input{width:100%;height:46px;border:1px solid #2A2E4A;border-radius:11px;background:#12162A;color:#fff;padding:0 13px;outline:none}.modal input:focus{border-color:#7A5CFF}
+.modal-primary{height:46px;border:0;border-radius:11px;background:linear-gradient(135deg,#FF4ECD,#7A5CFF,#4ECDC4);color:#fff;font-weight:700}.modal-link{display:block;margin:14px auto 0;border:0;background:transparent;color:#8A8ED6;font-size:12px}.auth-status{text-align:center;min-height:18px;margin-top:10px;color:#FF8FE0;font-size:12px}.info-body{color:#D9DAF4;font-size:13px;line-height:1.7}
+</style>
+
   <script>
     const body = document.body;
+
     const menuButton = document.getElementById('menuButton');
     const drawer = document.getElementById('sidePanel');
     const backdrop = document.getElementById('drawerBackdrop');
@@ -191,11 +236,90 @@ body.drawer-open .drawer{transform:translateX(0)}
       if(event.key === 'Escape') closeDrawer();
     });
 
-    document.querySelectorAll('.drawer-item').forEach(item => {
-      item.addEventListener('click', () => {
-        closeDrawer();
-      });
+    const SUPABASE_URL = 'https://dyqkgkqlihcrhrpcbjgh.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_bmraW60kS5DKdI2qO_7aNA_WoHYgHq';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+
+    const authModal = document.getElementById('authModal');
+    const authForm = document.getElementById('authForm');
+    const authTitle = document.getElementById('authTitle');
+    const authSubtitle = document.getElementById('authSubtitle');
+    const authSubmit = document.getElementById('authSubmit');
+    const authSwitch = document.getElementById('authSwitch');
+    const authStatus = document.getElementById('authStatus');
+    let authMode = 'signin';
+
+    function showAuth(mode){
+      authMode = mode;
+      authTitle.textContent = mode === 'signin' ? 'Sign in' : 'Sign up';
+      authSubtitle.textContent = mode === 'signin' ? 'Access your Methis AI account.' : 'Create your Methis AI account.';
+      authSubmit.textContent = mode === 'signin' ? 'Sign in' : 'Create account';
+      authSwitch.textContent = mode === 'signin' ? 'Create an account' : 'I already have an account';
+      authStatus.textContent = '';
+      authForm.reset();
+      authModal.hidden = false;
+      closeDrawer();
+      setTimeout(() => document.getElementById('authEmail').focus(), 0);
+    }
+    function closeAuth(){authModal.hidden=true}
+    document.getElementById('authClose').addEventListener('click', closeAuth);
+    authModal.addEventListener('click', e => {if(e.target===authModal) closeAuth()});
+    authSwitch.addEventListener('click', () => showAuth(authMode === 'signin' ? 'signup' : 'signin'));
+
+    authForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      authStatus.textContent = 'Please wait…';
+      authSubmit.disabled = true;
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      const result = authMode === 'signin'
+        ? await supabase.auth.signInWithPassword({email,password})
+        : await supabase.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin}});
+      authSubmit.disabled = false;
+      if(result.error){authStatus.textContent=result.error.message;return}
+      closeAuth();
+      if(authMode === 'signup' && !result.data.session){
+        showInfo('Check your email', '<p>Your account was created. Open the verification email from Supabase, then return here and sign in.</p>');
+      }
+      updateMenuForSession();
     });
+
+    async function updateMenuForSession(){
+      const {data:{session}} = await supabase.auth.getSession();
+      const signedIn = !!session;
+      document.getElementById('dashboardItem').querySelector('span').textContent = signedIn ? 'Dashboard' : 'Dashboard · Sign in required';
+    }
+
+    async function openDashboard(){
+      closeDrawer();
+      const {data:{session}} = await supabase.auth.getSession();
+      if(!session){showAuth('signin');return}
+      const user=session.user;
+      const view=document.getElementById('appView');
+      view.innerHTML=`<div class="app-screen"><div class="app-screen-head"><button class="back-button" id="dashboardBack">‹</button><div><h2>Dashboard</h2><div class="account-email">${escapeHtml(user.email || 'Account')}</div></div></div><div class="app-card"><div class="dashboard-stat"><span>Account</span><strong>Active</strong></div><div class="dashboard-stat"><span>Plan</span><strong>Free</strong></div><div class="dashboard-stat"><span>Authentication</span><strong>Supabase</strong></div><button class="signout" id="signoutButton">Sign out</button></div></div>`;
+      view.classList.add('active');
+      document.getElementById('dashboardBack').onclick=closeAppView;
+      document.getElementById('signoutButton').onclick=async()=>{await supabase.auth.signOut();closeAppView();updateMenuForSession()};
+    }
+    function escapeHtml(value){return value.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+    function closeAppView(){document.getElementById('appView').classList.remove('active');document.getElementById('appView').innerHTML=''}
+
+    function showInfo(title, html){
+      document.getElementById('infoTitle').textContent=title;
+      document.getElementById('infoBody').innerHTML=html;
+      document.getElementById('infoModal').hidden=false;
+      closeDrawer();
+    }
+    document.getElementById('infoClose').onclick=()=>document.getElementById('infoModal').hidden=true;
+    document.getElementById('infoModal').addEventListener('click',e=>{if(e.target.id==='infoModal')e.target.hidden=true});
+
+    document.getElementById('dashboardItem').addEventListener('click',openDashboard);
+    document.getElementById('signinItem').addEventListener('click',()=>showAuth('signin'));
+    document.getElementById('signupItem').addEventListener('click',()=>showAuth('signup'));
+    document.getElementById('aboutItem').addEventListener('click',()=>showInfo('About','<p><strong>Methis AI</strong> is a conservative AI coding agent designed to understand a repository and fix one specific problem at a time.</p><p>It uses a local open-weight coding model and validates changes before they are prepared for GitHub.</p>'));
+    document.getElementById('licenseItem').addEventListener('click',()=>showInfo('License','<p>Methis AI web interface and application code are maintained by Aora Group.</p><p>Third-party dependencies remain under their respective licenses. Supabase JS is distributed under its own open-source license.</p>'));
+    supabase.auth.onAuthStateChange(()=>updateMenuForSession());
+    updateMenuForSession();
   </script>
 </body>
 </html>
