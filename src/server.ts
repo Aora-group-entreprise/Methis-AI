@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { extname, join, normalize } from "node:path";
+import { extname, join, normalize, resolve, relative, isAbsolute, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { LocalQwenModel } from "./model.js";
 import { CommandVerifier } from "./verifier.js";
@@ -9,6 +9,7 @@ import { MethisEngine } from "./engine.js";
 import { loadGitHubRepository } from "./github.js";
 import { createFixPullRequest } from "./github-fix.js";
 import { clearSessionCookie, consume, cookieToken, current, login, planInfo, publicAccount, register, sessionCookie } from "./auth.js";
+import { PLAN_LIMITS } from "./limits.js";
 
 const root=fileURLToPath(new URL("..",import.meta.url)), webRoot=join(root,"web");
 const model=new LocalQwenModel(), engine=new MethisEngine(model,new CommandVerifier());
@@ -33,7 +34,7 @@ async function api(req:import("node:http").IncomingMessage,res:import("node:http
     const a=requireAccount(await account(req));
     const data=await body(req);
     const problemText=String(data.problem||"").trim();
-    if((req.url==="/api/fix"||req.url==="/api/github-fix") && /\b(fix|repair|fixe)\b.*\b(all|everything|entire|whole|toute|tout)\b|\b(all|everything|entire|whole|toute|tout)\b.*\b(app|application|repo|repository|codebase)\b/i.test(problemText)){
+    if((req.url==="/api/fix"||req.url==="/api/github-fix") && (/\b(fix|repair|fixe)\b.*\b(all|everything|entire|whole|toute|tout)\b|\b(all|everything|entire|whole|toute|tout)\b.*\b(app|application|repo|repository|codebase)\b|^(fix|repair|fixe|répare|corrige)\s+(the\s+)?(app|application|repo|repository|codebase|projet|tout)\s*$/i.test(problemText))){
       return json(res,400,{error:"One Fix credit can repair one specific bug only. Describe one concrete bug; Méthis will not perform a whole-app repair."});
     }
 
@@ -47,13 +48,14 @@ async function api(req:import("node:http").IncomingMessage,res:import("node:http
     }
 
     if(req.url==="/api/github-fix"){
+      if(!PLAN_LIMITS[a.plan].githubFix)return json(res,403,{error:"GitHub Fix is available on the Méthis Pro plan only."});
       const repository=String(data.repository||"").trim(),problem=problemText||"Describe one specific bug to fix.";
       if(!repository)return json(res,400,{error:"Repository is required."});
       const remote=await loadGitHubRepository(repository.replace(/^github(-fix)?:/,""));
       const plan=await model.plan({repository:{root:`github://${remote.repository.owner}/${remote.repository.name}`,files:remote.files,packageManagers:[],testCommands:[],buildCommands:[]},bug:{description:problem}});
       if(!plan.edits.length)return json(res,422,{error:"Méthis produced no safe edits. No Fix credit was consumed and no Pull Request was created.",summary:plan.summary});
-      const usage=await consume(a,"fixes");
       const pr=await createFixPullRequest(remote.repository,plan);
+      const usage=await consume(a,"fixes");
       return json(res,201,{mode:"github-fix",repository:remote.repository,summary:plan.summary,changedFiles:[...new Set(plan.edits.map(e=>e.path))],branch:pr.branch,commit:pr.commit,pullRequest:pr.prUrl,pullRequestNumber:pr.prNumber,verification:pr.verification,usage,plan:a.plan});
     }
 
@@ -61,10 +63,13 @@ async function api(req:import("node:http").IncomingMessage,res:import("node:http
       const local=String(data.localPath||"").trim(),bug=problemText||"Describe one specific bug to fix.";
       if(process.env.METHIS_ENABLE_LOCAL_FIX!=="true")return json(res,403,{error:"Local verified fixes are disabled on the web server. Use an approved workspace integration."});
       if(!local)return json(res,400,{error:"A local workspace path is required for verified local fixes."});
-      const root=process.env.METHIS_WORKSPACE_ROOT;
-      if(!root||!local.startsWith(normalize(root)))return json(res,403,{error:"The requested workspace is outside the configured Méthis workspace root."});
+      const configuredRoot=process.env.METHIS_WORKSPACE_ROOT;
+      if(!configuredRoot)return json(res,500,{error:"METHIS_WORKSPACE_ROOT is not configured."});
+      const workspaceRoot=resolve(configuredRoot), target=resolve(local), rel=relative(workspaceRoot,target);
+      if(rel.startsWith(".."+sep)||isAbsolute(rel))return json(res,403,{error:"The requested workspace is outside the configured Méthis workspace root."});
+      const result=await engine.fix(target,{description:bug});
+      if(!result.verified)return json(res,422,{...result,error:"Méthis could not verify the fix. No Fix credit was consumed.",plan:a.plan});
       const usage=await consume(a,"fixes");
-      const result=await engine.fix(local,{description:bug});
       return json(res,200,{...result,usage,plan:a.plan});
     }
     return json(res,404,{error:"Unknown endpoint."});
