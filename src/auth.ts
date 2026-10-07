@@ -4,7 +4,7 @@ import { randomBytes, randomUUID, scryptSync, timingSafeEqual, createHmac } from
 import { FIX_RELEASE_DAYS, PLAN_LIMITS } from "./limits.js";
 
 export type Plan = keyof typeof PLAN_LIMITS;
-export interface Account { id:string; email:string; passwordHash:string; salt:string; plan:Plan; createdAt:string; usage:{day:string; analyses:number; fixes:number}; billingCycleStartedAt?:string; }
+export interface Account { id:string; email:string; passwordHash:string; salt:string; plan:Plan; createdAt:string; usage:{day:string; analyses:number; fixes:number}; billingCycleStartedAt?:string; fixCycleKey?:string; }
 const dataFile=join(process.cwd(),"data","accounts.json");
 const secret=process.env.METHIS_SESSION_SECRET || randomBytes(32).toString("hex");
 
@@ -16,9 +16,11 @@ function normalizeEmail(email:string){return email.trim().toLowerCase();}
 function hash(password:string,salt:string){return scryptSync(password,salt,64,{N:16384,r:8,p:1,maxmem:64*1024*1024}).toString("hex");}
 function tokenFor(account:Account){const payload=Buffer.from(JSON.stringify({id:account.id,email:account.email,exp:Date.now()+7*86400000})).toString("base64url");const sig=createHmac("sha256",secret).update(payload).digest("base64url");return payload+"."+sig;}
 function verifyToken(token:string){const [payload,sig]=token.split(".");if(!payload||!sig)return null;const expected=createHmac("sha256",secret).update(payload).digest("base64url");if(sig.length!==expected.length||!timingSafeEqual(Buffer.from(sig),Buffer.from(expected)))return null;try{const data=JSON.parse(Buffer.from(payload,"base64url").toString("utf8"));if(!data.id||data.exp<Date.now())return null;return data as {id:string;email:string;exp:number};}catch{return null;}}
-function resetDailyUsage(account:Account){const day=new Date().toISOString().slice(0,10);if(account.usage.day!==day){account.usage.day=day;account.usage.analyses=0;}}
+function resetDailyUsage(account:Account){const day=new Date().toISOString().slice(0,10);if(account.usage.day!==day){account.usage.day=day;account.usage.analyses=0;}ensureFixCycle(account);}
 function cycleStart(account:Account):Date{return account.plan==="pro"&&account.billingCycleStartedAt?new Date(account.billingCycleStartedAt):new Date(Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth(),1));}
-function releasedFixes(account:Account,now=new Date()):number{if(account.plan==="free")return 2;const elapsedDays=Math.floor((now.getTime()-cycleStart(account).getTime())/86400000);return FIX_RELEASE_DAYS.filter(day=>elapsedDays>=day).length*2;}
+function cycleKey(account:Account,now=new Date()):string{if(account.plan==="free")return now.toISOString().slice(0,7);return cycleStart(account).toISOString().slice(0,10);}
+function ensureFixCycle(account:Account){const key=cycleKey(account);if(account.fixCycleKey!==key){account.fixCycleKey=key;account.usage.fixes=0;}}
+function releasedFixes(account:Account,now=new Date()):number{ensureFixCycle(account);if(account.plan==="free")return 2;const elapsedDays=Math.floor((now.getTime()-cycleStart(account).getTime())/86400000);return FIX_RELEASE_DAYS.filter(day=>elapsedDays>=day).length*2;}
 export function sessionCookie(token:string,secure:boolean){return `methis_session=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800${secure?"; Secure":""}`;}
 export function clearSessionCookie(secure:boolean){return `methis_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0${secure?"; Secure":""}`;}
 export function cookieToken(cookie:string|undefined){return cookie?.split(";").map(v=>v.trim()).find(v=>v.startsWith("methis_session="))?.slice("methis_session=".length);}
