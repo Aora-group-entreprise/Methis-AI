@@ -25,7 +25,13 @@ async function walk(root: string, current: string, files: RepositoryFile[]): Pro
     if (!entry.isFile()) continue;
     const info = await stat(full);
     if (info.size > 2_000_000) continue;
-    files.push({ path: relative(root, full), size: info.size, language: languageFor(full) });
+    let content = "";
+    try {
+      content = await readFile(full, "utf8");
+    } catch {
+      continue;
+    }
+    files.push({ path: relative(root, full), size: info.size, language: languageFor(full), content });
   }
 }
 
@@ -37,24 +43,22 @@ export async function scanRepository(root: string): Promise<RepositorySnapshot> 
   const testCommands: string[] = [];
   const buildCommands: string[] = [];
 
-  if (files.some(f => f.path === "package.json")) {
+  if (files.some((f) => f.path === "package.json")) {
     packageManagers.push("npm/pnpm/yarn");
     try {
-      const packageJson = JSON.parse(await readFile(join(root, "package.json"), "utf8"));
+      const packageJson = JSON.parse(files.find((f) => f.path === "package.json")?.content ?? "{}");
       const scripts = packageJson.scripts ?? {};
       if (scripts.test) testCommands.push("npm test");
       if (scripts.typecheck) testCommands.push("npm run typecheck");
       if (scripts.build) buildCommands.push("npm run build");
     } catch {
-      // Invalid package.json is itself useful evidence for the agent.
+      // Invalid package.json is useful evidence for the agent.
     }
   }
 
-  if (files.some(f => f.path === "pyproject.toml" || f.path === "requirements.txt")) {
-    packageManagers.push("python");
-  }
-  if (files.some(f => f.path === "go.mod")) packageManagers.push("go");
-  if (files.some(f => f.path === "Cargo.toml")) packageManagers.push("cargo");
+  if (files.some((f) => f.path === "pyproject.toml" || f.path === "requirements.txt")) packageManagers.push("python");
+  if (files.some((f) => f.path === "go.mod")) packageManagers.push("go");
+  if (files.some((f) => f.path === "Cargo.toml")) packageManagers.push("cargo");
 
   return { root, files, packageManagers, testCommands, buildCommands };
 }

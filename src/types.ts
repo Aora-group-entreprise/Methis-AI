@@ -4,6 +4,7 @@ export interface RepositoryFile {
   path: string;
   size: number;
   language: SupportedLanguage;
+  content: string;
 }
 
 export interface RepositorySnapshot {
