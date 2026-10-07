@@ -140,6 +140,14 @@ body.drawer-open .drawer{transform:translateX(0)}
     </div>
 
     <nav class="drawer-nav">
+      <button class="drawer-item" id="analyzeItem" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4M8.5 11h5M11 8.5v5"/></svg>
+        <span>Analyze</span>
+      </button>
+      <button class="drawer-item" id="fixItem" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14.5 5.5a4 4 0 0 0 4 5l-8.8 8.8a2 2 0 0 1-2.8-2.8l8.8-8.8a4 4 0 0 0-1.2-2.2z"/><path d="m6.5 17.5 2 2"/></svg>
+        <span>Fix</span>
+      </button>
       <button class="drawer-item" id="dashboardItem" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>
         <span>Dashboard</span>
@@ -313,30 +321,81 @@ body.drawer-open .drawer{transform:translateX(0)}
     document.getElementById('infoClose').onclick=()=>document.getElementById('infoModal').hidden=true;
     document.getElementById('infoModal').addEventListener('click',e=>{if(e.target.id==='infoModal')e.target.hidden=true});
 
+    document.getElementById('analyzeItem').addEventListener('click',()=>{closeDrawer();setAction('analyze');analyzeRepository()});
+    document.getElementById('fixItem').addEventListener('click',()=>{closeDrawer();setAction('fix');fixRepository()});
     document.getElementById('dashboardItem').addEventListener('click',openDashboard);
     document.getElementById('signinItem').addEventListener('click',()=>showAuth('signin'));
     document.getElementById('signupItem').addEventListener('click',()=>showAuth('signup'));
     document.getElementById('aboutItem').addEventListener('click',()=>showInfo('About','<p><strong>Methis AI</strong> is a conservative AI coding agent designed to understand a repository and fix one specific problem at a time.</p><p>It uses a local open-weight coding model and validates changes before they are prepared for GitHub.</p>'));
     document.getElementById('licenseItem').addEventListener('click',()=>showInfo('License','<p>Methis AI web interface and application code are maintained by Aora Group.</p><p>Third-party dependencies remain under their respective licenses. Supabase JS is distributed under its own open-source license.</p>'));
-    document.getElementById('run').addEventListener('click', async () => {
-      const {data:{session}} = await supabase.auth.getSession();
-      if(!session){ showAuth('signin'); return; }
-      const repo=document.getElementById('repository').value.trim();
-      if(!repo){ document.getElementById('repository').focus(); return; }
-      showInfo('Run', '<p>Repository received:</p><p><strong>'+escapeHtml(repo)+'</strong></p><p>Your authenticated Methis workspace can continue with this repository.</p>');
-    });
+    let selectedAction = 'analyze';
 
-    document.getElementById('analyze').addEventListener('click', () => {
+    function setAction(action){
+      selectedAction = action;
       const field=document.getElementById('repository');
-      field.placeholder='Paste your GitHub repository to analyze\\nhttps://github.com/owner/repository';
+      field.placeholder = action === 'fix'
+        ? 'Paste your GitHub repository to fix\nhttps://github.com/owner/repository'
+        : 'Paste your GitHub repository to analyze\nhttps://github.com/owner/repository';
+      document.getElementById('analyze').setAttribute('aria-pressed', String(action === 'analyze'));
+      document.getElementById('fix').setAttribute('aria-pressed', String(action === 'fix'));
       field.focus();
-    });
+    }
 
-    document.getElementById('fix').addEventListener('click', () => {
-      const field=document.getElementById('repository');
-      field.placeholder='Paste your GitHub repository to fix\\nhttps://github.com/owner/repository';
-      field.focus();
-    });
+    async function authRequest(path,payload){
+      const {data:{session}}=await supabase.auth.getSession();
+      if(!session){showAuth('signin');return null;}
+      const response=await fetch(path,{
+        method:'POST',
+        headers:{'content-type':'application/json','authorization':'Bearer '+session.access_token},
+        body:JSON.stringify(payload)
+      });
+      const data=await response.json().catch(()=>({error:'Invalid server response.'}));
+      if(!response.ok) throw new Error(data.error || 'Request failed.');
+      return data;
+    }
+
+    function renderResult(title,data){
+      const repoName=data.repository?.fullName || data.repository?.name || data.repository || '';
+      const extra=data.pullRequest
+        ? '<p><strong>Pull Request:</strong> <a href="'+escapeHtml(data.pullRequest)+'" target="_blank" rel="noopener">Open draft PR</a></p>'
+        : '';
+      const files=data.files!==undefined ? '<p><strong>Files scanned:</strong> '+escapeHtml(String(data.files))+'</p>' : '';
+      const changed=data.changedFiles?.length ? '<p><strong>Changed files:</strong> '+escapeHtml(data.changedFiles.join(', '))+'</p>' : '';
+      showInfo(title,'<p><strong>'+escapeHtml(repoName)+'</strong></p>'+files+changed+(data.summary?'<p>'+escapeHtml(data.summary)+'</p>':'')+extra);
+    }
+
+    async function analyzeRepository(){
+      const repository=document.getElementById('repository').value.trim();
+      if(!repository){document.getElementById('repository').focus();return;}
+      try{
+        showInfo('Analyze','<p>Analyzing the repository…</p>');
+        const data=await authRequest('/api/analyze',{repository});
+        if(data) renderResult('Analysis ready',data);
+      }catch(error){showInfo('Analyze failed','<p>'+escapeHtml(error.message)+'</p>');}
+    }
+
+    async function fixRepository(){
+      const repository=document.getElementById('repository').value.trim();
+      if(!repository){document.getElementById('repository').focus();return;}
+      const problem=window.prompt('Describe one specific bug to fix:');
+      if(!problem || !problem.trim()) return;
+      try{
+        showInfo('Fix','<p>Creating a verified GitHub Fix…</p>');
+        const data=await authRequest('/api/github-fix',{repository,problem:problem.trim()});
+        if(data) renderResult('Fix ready',data);
+      }catch(error){showInfo('Fix failed','<p>'+escapeHtml(error.message)+'</p>');}
+    }
+
+    async function runSelectedAction(){
+      const {data:{session}}=await supabase.auth.getSession();
+      if(!session){showAuth('signin');return;}
+      if(selectedAction==='fix') await fixRepository();
+      else await analyzeRepository();
+    }
+
+    document.getElementById('run').addEventListener('click',runSelectedAction);
+    document.getElementById('analyze').addEventListener('click',()=>{setAction('analyze');analyzeRepository()});
+    document.getElementById('fix').addEventListener('click',()=>{setAction('fix');fixRepository()});
 
     document.getElementById('upgradeButton').addEventListener('click', async () => {
       const {data:{session}} = await supabase.auth.getSession();
