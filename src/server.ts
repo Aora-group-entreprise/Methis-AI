@@ -7,6 +7,7 @@ import { LocalQwenModel } from "./model.js";
 import { CommandVerifier } from "./verifier.js";
 import { MethisEngine } from "./engine.js";
 import { loadGitHubRepository } from "./github.js";
+import { createFixPullRequest } from "./github-fix.js";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const webRoot = join(root, "web");
@@ -41,6 +42,20 @@ async function api(req: import("node:http").IncomingMessage,res: import("node:ht
       if(!input.slice(input.indexOf(":")+1).trim()) return json(res,400,{error:"Repository is required."});
       const remote=await loadGitHubRepository(input.slice(input.indexOf(":")+1));
       return json(res,200,{engine:"Méthis AI",mode:"github-scan",repository:remote.repository,files:remote.files.length,languages:[...new Set(remote.files.map(f=>f.language))],status:"ready"});
+    }
+
+    if(req.url==="/api/github-fix"){
+      const repository=String(data.repository||"").trim();
+      const problem=String(data.problem||"").trim() || "Analyze this repository and identify the smallest safe fix for the reported problem.";
+      if(!repository) return json(res,400,{error:"Repository is required."});
+      const remote=await loadGitHubRepository(repository.replace(/^github(-fix)?:/,""));
+      const plan=await new LocalQwenModel().plan({
+        repository:{root:`github://${remote.repository.owner}/${remote.repository.name}`,files:remote.files,packageManagers:[],testCommands:[],buildCommands:[]},
+        bug:{description:problem}
+      });
+      if(!plan.edits.length) return json(res,422,{error:"Méthis produced no safe edits. No Pull Request was created.",summary:plan.summary});
+      const pr=await createFixPullRequest(remote.repository,plan);
+      return json(res,201,{mode:"github-fix",repository:remote.repository,summary:plan.summary,changedFiles:[...new Set(plan.edits.map(e=>e.path))],branch:pr.branch,commit:pr.commit,pullRequest:pr.prUrl,pullRequestNumber:pr.prNumber,verification:pr.verification});
     }
 
     if(req.url==="/api/fix"){
