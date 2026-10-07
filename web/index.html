@@ -9,9 +9,9 @@
 <body>
 <header class="top"><a class="brand" href="#analyze"><span class="mark" id="mark"><img src="https://raw.githubusercontent.com/Aora-group-entreprise/Methis-AI/main/file_0000000081f88208bb42c3ed7879a73a.png" alt="Méthis AI logo"></span><span>Méthis</span><small>AI</small></a><nav class="nav"><a href="#analyze">Analyze</a><a href="#fix">Fix</a><a href="#plans">Plans</a><a href="#account">Account</a></nav><div class="actions"><button class="ghost" id="loginBtn">Log in</button><button class="primary" id="startBtn">Get started</button><button class="menu" id="menuBtn" aria-label="Open menu">☰</button></div></header><nav class="mobileNav" id="mobileNav"><a href="#analyze">Analyze</a><a href="#fix">Fix</a><a href="#plans">Plans</a><a href="#account">Account</a></nav>
 <section class="dashboard" id="dashboard">
-<div class="dashTop"><div class="dashBrand"><img src="https://raw.githubusercontent.com/Aora-group-entreprise/Methis-AI/main/file_0000000081f88208bb42c3ed7879a73a.png" alt="Méthis AI"><div><strong>Méthis Dashboard</strong><small id="dashUser">Authenticated workspace</small></div></div><span class="online"><i class="engineDot"></i>ONLINE</span></div>
+<div class="dashTop"><div class="dashBrand"><img src="https://raw.githubusercontent.com/Aora-group-entreprise/Methis-AI/main/file_0000000081f88208bb42c3ed7879a73a.png" alt="Méthis AI"><div><strong>Méthis Dashboard</strong><small id="dashUser">Authenticated workspace</small></div></div><span class="online" id="dashSessionStatus">AUTHENTICATED</span></div>
 <div class="dashNav">
-<button class="active" data-dash="overview">Dashboard</button><button data-dash="analyzeScreen">Analyze</button><button data-dash="fixScreen">Fix</button><button data-dash="verifyScreen">Verification</button><button data-dash="accountScreen">Account</button>
+<button class="active" data-dash="overview">Dashboard</button><button data-dash="analyzeScreen">Analyze</button><button data-dash="fixScreen">Fix</button><button data-dash="accountScreen">Account</button>
 </div>
 <div class="dashSection active" id="overview">
 <div class="dashGrid">
@@ -21,7 +21,7 @@
 </div>
 <div class="dashSection" id="analyzeScreen"></div>
 <div class="dashSection" id="fixScreen"></div>
-<div class="dashSection" id="verifyScreen"><div class="dashCard"><h2>Verification</h2><p>Verification status for the current workspace. Méthis keeps this screen focused on the current run, not a history archive.</p><div class="dashRows"><div class="dashRow"><span>Typecheck</span><b id="dashTypecheck">Waiting</b></div><div class="dashRow"><span>Tests</span><b id="dashTests">Waiting</b></div><div class="dashRow"><span>Build</span><b id="dashBuild">Waiting</b></div></div></div></div>
+
 <div class="dashSection" id="accountScreen"></div>
 </section><main>
 <section class="hero" id="analyze"><div class="eyebrow"><i class="dot"></i> Local AI coding agent</div><h1>Your codebase.<br><span>Understood. Fixed. Verified.</span></h1><p>Méthis analyzes repositories, proposes minimal safe changes, and verifies local fixes before you ship.</p>
