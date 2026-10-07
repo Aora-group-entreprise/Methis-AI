@@ -22,7 +22,7 @@ function requireAccount(a:Awaited<ReturnType<typeof account>>){if(!a)throw new E
 
 async function api(req:import("node:http").IncomingMessage,res:import("node:http").ServerResponse){
   try{
-    if(req.method==="GET"&&req.url==="/api/health")return json(res,200,{ok:true,engine:"Méthis AI",model:model.config.model});
+    if(req.method==="GET"&&req.url==="/api/health"){const qwen=await model.health();return json(res,200,{ok:true,engine:"Méthis AI",model:model.config.model,qwen});}
     if(req.method==="GET"&&req.url==="/api/plans")return json(res,200,{plans:planInfo()});
     if(req.method==="GET"&&req.url==="/api/auth/me"){const a=await account(req);return json(res,200,{authenticated:!!a,account:a?publicAccount(a):null});}
     if(req.method==="POST"&&req.url==="/api/auth/register"){const d=await body(req);const result=await register(String(d.email||""),String(d.password||""));return json(res,201,{account:publicAccount(result.account)},{set-cookie:sessionCookie(result.token,secureCookies)});}
