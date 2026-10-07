@@ -10,12 +10,13 @@
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:#080C15;color:#FFFFFF;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body.drawer-open{overflow:hidden}
 button,textarea{font:inherit}
 button{cursor:pointer}
 .page{width:100%;max-width:520px;margin:0 auto;padding:0 24px 32px}
 .header{height:68px;display:flex;align-items:center;justify-content:flex-end}
-.account{width:36px;height:36px;border:1px solid #2A2E4A;border-radius:50%;background:transparent;color:#fff;display:grid;place-items:center;padding:0}
-.account svg{width:18px;height:18px}
+.menu-button{width:40px;height:40px;border:1px solid #2A2E4A;border-radius:12px;background:transparent;color:#fff;display:grid;place-items:center;padding:0}
+.menu-button svg{width:21px;height:21px}
 .hero{text-align:center;padding:58px 0 32px;position:relative}
 .hero-logo{width:112px;height:112px;display:block;object-fit:contain;margin:0 auto 16px}
 .hero h1{margin:0;font-size:36px;line-height:1.08;font-weight:750;letter-spacing:-.045em}
@@ -44,14 +45,34 @@ button{cursor:pointer}
 .features li:before{content:"✓";display:inline-block;width:18px;color:#4ECDC4;font-weight:800}
 .upgrade{width:100%;height:42px;margin-top:18px;border:0;border-radius:11px;color:#fff;font-size:13px;font-weight:700;background:linear-gradient(135deg,#FF4ECD,#7A5CFF,#4ECDC4)}
 .footer{text-align:center;padding:28px 4px 0;color:#8A8ED6;font-size:10px;line-height:1.5}
+
+.drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.58);opacity:0;visibility:hidden;transition:opacity .22s ease,visibility .22s ease;z-index:20}
+.drawer{position:fixed;top:0;right:0;width:min(86vw,360px);height:100dvh;background:#0D1120;border-left:1px solid #2A2E4A;box-shadow:-18px 0 55px rgba(0,0,0,.45);transform:translateX(100%);transition:transform .26s cubic-bezier(.22,.61,.36,1);z-index:21;display:flex;flex-direction:column;padding:24px 20px calc(24px + env(safe-area-inset-bottom));}
+body.drawer-open .drawer-backdrop{opacity:1;visibility:visible}
+body.drawer-open .drawer{transform:translateX(0)}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;padding-bottom:22px;border-bottom:1px solid #2A2E4A}
+.drawer-brand{display:flex;align-items:center;gap:10px}
+.drawer-brand img{width:34px;height:34px;object-fit:contain}
+.drawer-brand strong{font-size:17px;letter-spacing:-.02em}
+.drawer-close{width:36px;height:36px;border:1px solid #2A2E4A;border-radius:10px;background:transparent;color:#fff;display:grid;place-items:center;font-size:22px;line-height:1}
+.drawer-nav{display:grid;gap:6px;padding-top:18px}
+.drawer-item{width:100%;min-height:50px;border:0;border-radius:12px;background:transparent;color:#fff;display:flex;align-items:center;gap:13px;padding:0 13px;text-align:left;font-size:14px;font-weight:600}
+.drawer-item:hover,.drawer-item:active{background:#12162A}
+.drawer-item svg{width:19px;height:19px;flex:0 0 auto;color:#8A8ED6}
+.drawer-divider{height:1px;background:#2A2E4A;margin:12px 0}
+.drawer-spacer{flex:1}
+.drawer-footer{color:#8A8ED6;font-size:10px;line-height:1.5;padding:16px 4px 0}
+
 @media(max-width:380px){.page{padding-left:18px;padding-right:18px}.hero{padding-top:50px}.hero-logo{width:100px;height:100px}.hero h1{font-size:34px}.repo-box{height:120px}}
 </style>
 </head>
 <body>
   <main class="page">
     <header class="header">
-      <button class="account" aria-label="Account">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20c.7-3.6 2.8-5.5 6.5-5.5s5.8 1.9 6.5 5.5"/></svg>
+      <button id="menuButton" class="menu-button" aria-label="Open menu" aria-controls="sidePanel" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M5 7h14"/><path d="M5 12h14"/><path d="M5 17h14"/>
+        </svg>
       </button>
     </header>
 
@@ -105,5 +126,76 @@ button{cursor:pointer}
 
     <footer class="footer">Cancel anytime • Secure crypto payments via USDC.</footer>
   </main>
+
+  <div id="drawerBackdrop" class="drawer-backdrop"></div>
+  <aside id="sidePanel" class="drawer" aria-label="Methis AI menu" aria-hidden="true">
+    <div class="drawer-head">
+      <div class="drawer-brand">
+        <img src="https://raw.githubusercontent.com/Aora-group-entreprise/Methis-AI/main/file_0000000081f88208bb42c3ed7879a73a.png" alt="">
+        <strong>Methis AI</strong>
+      </div>
+      <button id="closeMenu" class="drawer-close" aria-label="Close menu">×</button>
+    </div>
+
+    <nav class="drawer-nav">
+      <button class="drawer-item" id="dashboardItem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="drawer-item" id="signinItem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 5H6.5A2.5 2.5 0 0 0 4 7.5v9A2.5 2.5 0 0 0 6.5 19H10"/><path d="M13 8l4 4-4 4"/><path d="M17 12H8"/></svg>
+        <span>Sign in</span>
+      </button>
+      <button class="drawer-item" id="signupItem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3"/><path d="M3.5 19c.7-3.4 2.5-5.2 5.5-5.2s4.8 1.8 5.5 5.2"/><path d="M18 10v6M15 13h6"/></svg>
+        <span>Sign up</span>
+      </button>
+      <div class="drawer-divider"></div>
+      <button class="drawer-item" id="aboutItem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.5"/><path d="M12 10.5v5"/><circle cx="12" cy="7.2" r=".7" fill="currentColor" stroke="none"/></svg>
+        <span>About</span>
+      </button>
+      <button class="drawer-item" id="licenseItem">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M7 3.8h8l3 3V20.2H7z"/><path d="M15 3.8v3h3M9.5 11h5M9.5 14.5h5M9.5 8h2"/></svg>
+        <span>License</span>
+      </button>
+    </nav>
+
+    <div class="drawer-spacer"></div>
+    <div class="drawer-footer">Understand your code. Fix one problem at a time.</div>
+  </aside>
+
+  <script>
+    const body = document.body;
+    const menuButton = document.getElementById('menuButton');
+    const drawer = document.getElementById('sidePanel');
+    const backdrop = document.getElementById('drawerBackdrop');
+    const closeMenu = document.getElementById('closeMenu');
+
+    function openMenu(){
+      body.classList.add('drawer-open');
+      menuButton.setAttribute('aria-expanded','true');
+      drawer.setAttribute('aria-hidden','false');
+      closeMenu.focus();
+    }
+    function closeDrawer(){
+      body.classList.remove('drawer-open');
+      menuButton.setAttribute('aria-expanded','false');
+      drawer.setAttribute('aria-hidden','true');
+    }
+
+    menuButton.addEventListener('click', openMenu);
+    closeMenu.addEventListener('click', closeDrawer);
+    backdrop.addEventListener('click', closeDrawer);
+    document.addEventListener('keydown', event => {
+      if(event.key === 'Escape') closeDrawer();
+    });
+
+    document.querySelectorAll('.drawer-item').forEach(item => {
+      item.addEventListener('click', () => {
+        closeDrawer();
+      });
+    });
+  </script>
 </body>
 </html>
