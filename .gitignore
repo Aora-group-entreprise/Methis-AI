@@ -1,6 +1,7 @@
 node_modules/
 dist/
 data/accounts.json
+data/methis-usage.json
 .env
 .env.*
 *.log
