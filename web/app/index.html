@@ -25,6 +25,6 @@ async function openFile(file){document.querySelectorAll('.file').forEach(b=>b.cl
 $('openWorkspace').onclick=async()=>{saveRepo();if(!workspaceRepo)return alert('Connect a GitHub repository first.');$('dashboard').style.display='none';$('workspace').classList.add('open');$('section').textContent='Workspace';try{await loadWorkspace(workspaceRepo)}catch{}};
 $('workspaceRun').onclick=async()=>{if(!workspaceRepo)return;$('term').textContent='Running repository analysis…';try{const r=await fetch('/api/analyze',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({repository:workspaceRepo})});const d=await r.json();if(!r.ok)throw Error(d.error||'Analysis failed');$('term').textContent='✓ '+d.files+' files analyzed · '+(d.languages||[]).join(', ')}catch(e){$('term').textContent='✕ '+e.message}};
 $('agentRun').onclick=()=>{const q=$('agentInput').value.trim();if(!q)return;$('term').textContent='AI Agent: '+q;$('agentInput').value='';};
-$('filesBtn').onclick=()=>document.body.classList.toggle('x');
+$('filesBtn').onclick=()=>$('workspace').classList.toggle('mobile-files');
 const savedRepo=localStorage.getItem('methis-repository');if(savedRepo){$('repo').value=savedRepo;$('pn').textContent=savedRepo.split('/').filter(Boolean).pop()||savedRepo;$('pm').textContent='Saved repository'} 
 </script></body></html>
