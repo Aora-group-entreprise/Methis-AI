@@ -41,7 +41,7 @@ async function githubWrite<T>(url: string, token: string, init: RequestInit): Pr
   headers.set("accept", "application/vnd.github+json");
   headers.set("content-type", "application/json");
   headers.set("user-agent", "methis-ai");
-  headers.set("authorization", `Bearer \${token}`);
+  headers.set("authorization", `Bearer ${token}`);
   const response = await fetch(url, { ...init, headers });
   if (!response.ok) throw new Error(`GitHub write failed: ${response.status} ${await response.text()}`);
   return await response.json() as T;
@@ -152,38 +152,38 @@ export default {
         if (path.length > 500 || path.includes("..") || /(^|\/)(?:\.env(?:\..*)?|.*(?:secret|credential).*)$/i.test(path) || /\.(?:pem|key|p12|pfx)$/i.test(path)) return json({ error: "This file is protected from workspace editing." }, 403);
         if (content.length > 2_000_000) return json({ error: "File is too large to save." }, 413);
         const parsed = parseRepository(repository);
-        if (!branch) branch = \`methis/\${Date.now().toString(36)}\`;
+        if (!branch) branch = `methis/${Date.now().toString(36)}`;
         const base = await githubApi<{ object?: { sha?: string } }>(
-          \`https://api.github.com/repos/\${parsed.owner}/\${parsed.name}/git/ref/heads/\${encodeURIComponent(baseBranch)}\`,
+          `https://api.github.com/repos/${parsed.owner}/${parsed.name}/git/ref/heads/${encodeURIComponent(baseBranch)}`,
           env.GITHUB_TOKEN,
         );
         const baseSha = base.object?.sha;
         if (!baseSha) return json({ error: "Base branch could not be resolved." }, 400);
         let branchExists = true;
-        try { await githubApi(\`https://api.github.com/repos/\${parsed.owner}/\${parsed.name}/git/ref/heads/\${encodeURIComponent(branch)}\`, env.GITHUB_TOKEN); }
+        try { await githubApi(`https://api.github.com/repos/${parsed.owner}/${parsed.name}/git/ref/heads/${encodeURIComponent(branch)}`, env.GITHUB_TOKEN); }
         catch { branchExists = false; }
         if (!branchExists) {
-          await githubWrite(\`https://api.github.com/repos/\${parsed.owner}/\${parsed.name}/git/refs\`, env.GITHUB_TOKEN, {
+          await githubWrite(`https://api.github.com/repos/${parsed.owner}/${parsed.name}/git/refs`, env.GITHUB_TOKEN, {
             method: "POST",
-            body: JSON.stringify({ ref: \`refs/heads/\${branch}\`, sha: baseSha }),
+            body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: baseSha }),
           });
         }
         let existingSha: string | undefined;
         try {
           const existing = await githubApi<{ sha?: string }>(
-            \`https://api.github.com/repos/\${parsed.owner}/\${parsed.name}/contents/\${path}?ref=\${encodeURIComponent(branch)}\`,
+            `https://api.github.com/repos/${parsed.owner}/${parsed.name}/contents/${path}?ref=${encodeURIComponent(branch)}`,
             env.GITHUB_TOKEN,
           );
           existingSha = existing.sha;
         } catch {}
         const payload: Record<string, unknown> = {
-          message: \`feat(methis): update \${path}\`,
+          message: `feat(methis): update ${path}`,
           content: btoa(unescape(encodeURIComponent(content))),
           branch,
         };
         if (existingSha) payload.sha = existingSha;
         const saved = await githubWrite<{ content?: { sha?: string }; commit?: { sha?: string } }>(
-          \`https://api.github.com/repos/\${parsed.owner}/\${parsed.name}/contents/\${path}\`,
+          `https://api.github.com/repos/${parsed.owner}/${parsed.name}/contents/${path}`,
           env.GITHUB_TOKEN,
           { method: "PUT", body: JSON.stringify(payload) },
         );
@@ -200,7 +200,7 @@ export default {
         if (!repository || !branch) return json({ error: "Repository and branch are required." }, 400);
         const parsed = parseRepository(repository);
         const pr = await githubWrite<{ html_url?: string; number?: number; state?: string }>(
-          \`https://api.github.com/repos/\${parsed.owner}/\${parsed.name}/pulls\`,
+          `https://api.github.com/repos/${parsed.owner}/${parsed.name}/pulls`,
           env.GITHUB_TOKEN,
           { method: "POST", body: JSON.stringify({ title, body, head: branch, base, draft: false }) },
         );
