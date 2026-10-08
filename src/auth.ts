@@ -19,9 +19,6 @@ const dataFile = join(process.cwd(), "data", "methis-usage.json");
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
 
-if (!supabaseUrl || !supabasePublishableKey) {
-  throw new Error("SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY must be configured.");
-}
 
 const accounts = new Map<string, Account>();
 let loaded = false;
@@ -78,7 +75,8 @@ function releasedFixes(account: Account, now = new Date()): number {
 }
 
 function supabaseForToken(token: string) {
-  return createClient(supabaseUrl!, supabasePublishableKey!, {
+  if (!supabaseUrl || !supabasePublishableKey) return null;
+  return createClient(supabaseUrl, supabasePublishableKey, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
     accessToken: async () => token,
   });
@@ -92,6 +90,7 @@ function supabaseForToken(token: string) {
 async function verifyAccessToken(token: string): Promise<JwtPayload | null> {
   if (!token) return null;
   const client = supabaseForToken(token);
+  if (!client) return null;
   const { data, error } = await client.auth.getClaims();
   if (error || !data?.claims) return null;
   const claims = data.claims;
@@ -175,14 +174,23 @@ export function planInfo() {
   }));
 }
 
+const GUEST_ACCOUNT: Account = {
+  id: "guest",
+  email: "",
+  plan: "free",
+  createdAt: new Date().toISOString(),
+  usage: { day: dayKey(), analyses: 0, fixes: 0 },
+};
+
 export function guestAccount(): Account {
-  const account: Account = {
+  const account: Account = GUEST_ACCOUNT;
     id: "guest",
     email: "",
     plan: "free",
     createdAt: "",
     usage: { day: dayKey(), analyses: 0, fixes: 0 },
   };
+  ensureCycles(account);
   return account;
 }
 
