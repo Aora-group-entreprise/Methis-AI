@@ -36,6 +36,17 @@ async function githubApi<T>(url: string, token?: string): Promise<T> {
   return await response.json() as T;
 }
 
+async function githubWrite<T>(url: string, token: string, init: RequestInit): Promise<T> {
+  const headers = new Headers(init.headers);
+  headers.set("accept", "application/vnd.github+json");
+  headers.set("content-type", "application/json");
+  headers.set("user-agent", "methis-ai");
+  headers.set("authorization", `Bearer \${token}`);
+  const response = await fetch(url, { ...init, headers });
+  if (!response.ok) throw new Error(`GitHub write failed: ${response.status} ${await response.text()}`);
+  return await response.json() as T;
+}
+
 function withToken<T>(token: string | undefined, fn: () => Promise<T>): Promise<T> {
   const previous = process.env.GITHUB_TOKEN;
   if (token) process.env.GITHUB_TOKEN = token;
@@ -83,7 +94,11 @@ export default {
         const requestedRef = String(data.ref ?? "").trim();
         if (!repository) return json({ error: "Repository is required." }, 400);
         const parsed = parseRepository(repository);
-        const ref = requestedRef || parsed.ref || "HEAD";
+        const repoInfo = await githubApi<{ default_branch?: string }>(
+          `https://api.github.com/repos/${parsed.owner}/${parsed.name}`,
+          env.GITHUB_TOKEN,
+        );
+        const ref = requestedRef || parsed.ref || repoInfo.default_branch || "main";
         const tree = await githubApi<{ tree?: Array<{ path?: string; type?: string; size?: number; sha?: string }>; truncated?: boolean }>(
           `https://api.github.com/repos/${parsed.owner}/${parsed.name}/git/trees/${encodeURIComponent(ref)}?recursive=1`,
           env.GITHUB_TOKEN,
@@ -124,6 +139,72 @@ export default {
         if (blob.encoding !== "base64" || !blob.content) return json({ error: "File content is not available as text." }, 415);
         const content = atob(blob.content.replace(/\\s/g, ""));
         return json({ repository: parsed, branch: ref, path, content });
+      }
+
+      if (url.pathname === "/api/workspace/save") {
+        if (!env.GITHUB_TOKEN) return json({ error: "GITHUB_TOKEN is not configured on the Worker." }, 500);
+        const repository = String(data.repository ?? "").trim();
+        const path = String(data.path ?? "").trim();
+        const content = String(data.content ?? "");
+        const baseBranch = String(data.baseBranch ?? "").trim() || "main";
+        let branch = String(data.branch ?? "").trim();
+        if (!repository || !path) return json({ error: "Repository and file path are required." }, 400);
+        if (path.length > 500 || path.includes("..") || /(^|\/)(?:\.env(?:\..*)?|.*(?:secret|credential).*)$/i.test(path) || /\.(?:pem|key|p12|pfx)$/i.test(path)) return json({ error: "This file is protected from workspace editing." }, 403);
+        if (content.length > 2_000_000) return json({ error: "File is too large to save." }, 413);
+        const parsed = parseRepository(repository);
+        if (!branch) branch = \`methis/\${Date.now().toString(36)}\`;
+        const base = await githubApi<{ object?: { sha?: string } }>(
+          \`https://api.github.com/repos/\${parsed.owner}/\${parsed.name}/git/ref/heads/\${encodeURIComponent(baseBranch)}\`,
+          env.GITHUB_TOKEN,
+        );
+        const baseSha = base.object?.sha;
+        if (!baseSha) return json({ error: "Base branch could not be resolved." }, 400);
+        let branchExists = true;
+        try { await githubApi(\`https://api.github.com/repos/\${parsed.owner}/\${parsed.name}/git/ref/heads/\${encodeURIComponent(branch)}\`, env.GITHUB_TOKEN); }
+        catch { branchExists = false; }
+        if (!branchExists) {
+          await githubWrite(\`https://api.github.com/repos/\${parsed.owner}/\${parsed.name}/git/refs\`, env.GITHUB_TOKEN, {
+            method: "POST",
+            body: JSON.stringify({ ref: \`refs/heads/\${branch}\`, sha: baseSha }),
+          });
+        }
+        let existingSha: string | undefined;
+        try {
+          const existing = await githubApi<{ sha?: string }>(
+            \`https://api.github.com/repos/\${parsed.owner}/\${parsed.name}/contents/\${path}?ref=\${encodeURIComponent(branch)}\`,
+            env.GITHUB_TOKEN,
+          );
+          existingSha = existing.sha;
+        } catch {}
+        const payload: Record<string, unknown> = {
+          message: \`feat(methis): update \${path}\`,
+          content: btoa(unescape(encodeURIComponent(content))),
+          branch,
+        };
+        if (existingSha) payload.sha = existingSha;
+        const saved = await githubWrite<{ content?: { sha?: string }; commit?: { sha?: string } }>(
+          \`https://api.github.com/repos/\${parsed.owner}/\${parsed.name}/contents/\${path}\`,
+          env.GITHUB_TOKEN,
+          { method: "PUT", body: JSON.stringify(payload) },
+        );
+        return json({ repository: parsed, branch, baseBranch, path, contentSha: saved.content?.sha, commit: saved.commit?.sha, status: "saved" }, 201);
+      }
+
+      if (url.pathname === "/api/workspace/pr") {
+        if (!env.GITHUB_TOKEN) return json({ error: "GITHUB_TOKEN is not configured on the Worker." }, 500);
+        const repository = String(data.repository ?? "").trim();
+        const branch = String(data.branch ?? "").trim();
+        const base = String(data.baseBranch ?? "").trim() || "main";
+        const title = String(data.title ?? "").trim() || "Méthis AI changes";
+        const body = String(data.body ?? "").trim() || "Changes prepared and verified in the Méthis AI workspace.";
+        if (!repository || !branch) return json({ error: "Repository and branch are required." }, 400);
+        const parsed = parseRepository(repository);
+        const pr = await githubWrite<{ html_url?: string; number?: number; state?: string }>(
+          \`https://api.github.com/repos/\${parsed.owner}/\${parsed.name}/pulls\`,
+          env.GITHUB_TOKEN,
+          { method: "POST", body: JSON.stringify({ title, body, head: branch, base, draft: false }) },
+        );
+        return json({ repository: parsed, branch, baseBranch: base, pullRequest: pr.html_url, pullRequestNumber: pr.number, status: pr.state || "open" }, 201);
       }
 
       if (url.pathname === "/api/analyze") {
