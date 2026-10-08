@@ -449,30 +449,43 @@ body.drawer-open .drawer{transform:translateX(0)}
 
     document.getElementById('run').addEventListener('click',async()=>{
       const button=document.getElementById('run');
+      if(!supabase){
+        showAuth('signin');
+        return;
+      }
+
+      let session=null;
+      try{
+        const result=await supabase.auth.getSession();
+        session=result.data.session;
+      }catch(error){
+        console.error('Methis auth session check failed:',error);
+      }
+
+      if(!session){
+        pendingRunAfterAuth=true;
+        showAuth('signin');
+        return;
+      }
+
       const repository=document.getElementById('repository').value.trim();
       if(!repository){
         document.getElementById('repository').focus();
         return;
       }
 
-      if(!supabase){
-        showInfo('Sign in required','<p>Please sign in or sign up before running Methis AI.</p>');
-        return;
-      }
-
-      const {data:{session}} = await supabase.auth.getSession();
-      if(!session){
-        pendingRunAfterAuth = true;
-        showAuth('signin');
-        return;
-      }
-
       button.disabled=true;
       button.textContent='Working…';
-      try{await runSelectedAction();}
-      catch(error){showInfo('Request failed','<p>'+escapeHtml(error instanceof Error?error.message:String(error))+'</p>');}
-      finally{button.disabled=false;button.textContent='Run';}
+      try{
+        await runSelectedAction();
+      }catch(error){
+        showInfo('Request failed','<p>'+escapeHtml(error instanceof Error?error.message:String(error))+'</p>');
+      }finally{
+        button.disabled=false;
+        button.textContent='Run';
+      }
     });
+    
     document.getElementById('analyze').addEventListener('click',()=>{
       setAction('analyze');
     });
