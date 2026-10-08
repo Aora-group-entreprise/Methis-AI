@@ -1,4 +1,5 @@
 import { LocalQwenModel } from "./model.js";
+import { MethisBrain } from "./brain.js";
 import { loadGitHubRepository } from "./github.js";
 import type { FixPlan, RepositorySnapshot } from "./types.js";
 
@@ -119,6 +120,7 @@ export async function runCloudMethisEngine(input: {
   const model = new LocalQwenModel(input.modelUrl, input.modelName, input.modelToken);
   let errorOutput = "";
   const attempts: Array<Record<string, unknown>> = [];
+  const brain = new MethisBrain(input.task);
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     const remote = await loadGitHubRepository(`${repo.owner}/${repo.name}/${branch}`);
@@ -129,7 +131,8 @@ export async function runCloudMethisEngine(input: {
       testCommands: [],
       buildCommands: [],
     };
-    const plan = await model.plan({ repository: snapshot, bug: { description: input.task, errorOutput: errorOutput || undefined } });
+    const thinking = await brain.think(snapshot, { description: input.task, errorOutput: errorOutput || undefined }, model);
+    const plan = thinking.plan;
 
     if (!plan.edits.length) {
       return { status: "no-safe-edit", branch, attempts, message: plan.summary };
@@ -139,6 +142,7 @@ export async function runCloudMethisEngine(input: {
     const ci = await waitForCI(repo, applied.commitSha, input.token);
     attempts.push({
       attempt,
+      brain: { confidence: thinking.decision.confidence, risk: thinking.decision.risk, scope: thinking.decision.scope, hypotheses: thinking.decision.hypotheses },
       commit: applied.commitSha,
       changedFiles: applied.changedFiles,
       summary: plan.summary,
@@ -176,6 +180,7 @@ export async function runCloudMethisEngine(input: {
         commit: applied.commitSha,
         summary: plan.summary,
         reasoning: plan.reasoning,
+        brain: thinking.decision,
         changedFiles: applied.changedFiles,
         verification: { runUrl: ci.run?.html_url, workflow: ci.run?.name, conclusion: ci.run?.conclusion },
         pullRequest: pr.html_url,
@@ -185,6 +190,7 @@ export async function runCloudMethisEngine(input: {
     }
 
     errorOutput = ci.error || "GitHub Actions failed without log output.";
+    brain.learnFromFailure(errorOutput);
   }
 
   return {
