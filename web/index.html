@@ -232,7 +232,7 @@ body.drawer-open .drawer{transform:translateX(0)}
 
     const SUPABASE_URL = 'https://dyqkgkqlihcrhrpcbjgh.supabase.co';
     const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_bmraW60kS5DKdI2qO_7aNA_WoHYgHq';
-    const supabaseClient = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    const supabaseClient = window.supabase && typeof window.supabase.createClient === 'function' ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
     if(!supabaseClient){
       showInfo('Connection error','<p>Methis could not initialize its authentication service. Please refresh the page and try again.</p>');
     }
@@ -390,12 +390,12 @@ body.drawer-open .drawer{transform:translateX(0)}
     }
 
     function renderResult(title,data){
-      const repoName=data.repository?.fullName || data.repository?.name || data.repository || '';
+      const repoName=(data.repository && (data.repository.fullName || data.repository.name)) || data.repository || '';
       const extra=data.pullRequest
         ? '<p><strong>Pull Request:</strong> <a href="'+escapeHtml(data.pullRequest)+'" target="_blank" rel="noopener">Open draft PR</a></p>'
         : '';
       const files=data.files!==undefined ? '<p><strong>Files scanned:</strong> '+escapeHtml(String(data.files))+'</p>' : '';
-      const changed=data.changedFiles?.length ? '<p><strong>Changed files:</strong> '+escapeHtml(data.changedFiles.join(', '))+'</p>' : '';
+      const changed=data.changedFiles && data.changedFiles.length ? '<p><strong>Changed files:</strong> '+escapeHtml(data.changedFiles.join(', '))+'</p>' : '';
       showInfo(title,'<p><strong>'+escapeHtml(repoName)+'</strong></p>'+files+changed+(data.summary?'<p>'+escapeHtml(data.summary)+'</p>':'')+extra);
     }
 
