@@ -207,6 +207,116 @@ export default {
         return json({ repository: parsed, branch, baseBranch: base, pullRequest: pr.html_url, pullRequestNumber: pr.number, status: pr.state || "open" }, 201);
       }
 
+      if (url.pathname === "/api/workspace/agent") {
+        if (!env.GITHUB_TOKEN) return json({ error: "GITHUB_TOKEN is not configured on the Worker." }, 500);
+        const repository = String(data.repository ?? "").trim();
+        const task = String(data.task ?? "").trim();
+        const baseBranch = String(data.baseBranch ?? "").trim() || "main";
+        if (!repository || !task) return json({ error: "Repository and task are required." }, 400);
+
+        const remote = await loadGitHubRepository(repository);
+        const model = new LocalQwenModel(env.METHIS_MODEL_URL, env.METHIS_MODEL);
+        const plan = await model.plan({
+          repository: {
+            root: `github://${remote.repository.owner}/${remote.repository.name}`,
+            files: remote.files,
+            packageManagers: [],
+            testCommands: [],
+            buildCommands: [],
+          },
+          bug: { description: task },
+        });
+        if (!plan.edits.length) return json({ error: "Méthis found no safe edit for this task.", summary: plan.summary }, 422);
+
+        const parsed = parseRepository(repository);
+        const base = await githubApi<{ object?: { sha?: string } }>(
+          `https://api.github.com/repos/${parsed.owner}/${parsed.name}/git/ref/heads/${encodeURIComponent(baseBranch)}`,
+          env.GITHUB_TOKEN,
+        );
+        const baseSha = base.object?.sha;
+        if (!baseSha) return json({ error: "Base branch could not be resolved." }, 400);
+
+        const branch = `methis/agent-${Date.now().toString(36)}`;
+        await githubWrite(`https://api.github.com/repos/${parsed.owner}/${parsed.name}/git/refs`, env.GITHUB_TOKEN, {
+          method: "POST",
+          body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: baseSha }),
+        });
+
+        const changedFiles: string[] = [];
+        const diffs: string[] = [];
+        for (const edit of plan.edits.slice(0, 20)) {
+          if (!edit.path || edit.path.length > 500 || edit.path.includes("..")) continue;
+          if (/(^|\/)(?:\.env(?:\..*)?|.*(?:secret|credential).*)$/i.test(edit.path) || /\.(?:pem|key|p12|pfx)$/i.test(edit.path)) continue;
+          const current = await githubApi<{ content?: string; encoding?: string; sha?: string }>(
+            `https://api.github.com/repos/${parsed.owner}/${parsed.name}/contents/${edit.path}?ref=${encodeURIComponent(branch)}`,
+            env.GITHUB_TOKEN,
+          );
+          if (current.encoding !== "base64" || !current.content || !current.sha) continue;
+          const oldContent = atob(current.content.replace(/\s/g, ""));
+          if (!oldContent.includes(edit.oldText)) continue;
+          const nextContent = oldContent.replace(edit.oldText, edit.newText);
+          if (nextContent === oldContent || nextContent.length > 2_000_000) continue;
+          await githubWrite(`https://api.github.com/repos/${parsed.owner}/${parsed.name}/contents/${edit.path}`, env.GITHUB_TOKEN, {
+            method: "PUT",
+            body: JSON.stringify({
+              message: `feat(methis): agent update ${edit.path}`,
+              content: btoa(unescape(encodeURIComponent(nextContent))),
+              sha: current.sha,
+              branch,
+            }),
+          });
+          changedFiles.push(edit.path);
+          diffs.push(`--- a/${edit.path}\n+++ b/${edit.path}\n-${edit.oldText}\n+${edit.newText}`);
+        }
+
+        if (!changedFiles.length) return json({ error: "Méthis could not safely apply its planned edits.", summary: plan.summary }, 422);
+        return json({
+          engine: "Méthis AI",
+          mode: "workspace-agent",
+          repository: remote.repository,
+          branch,
+          baseBranch,
+          summary: plan.summary,
+          reasoning: plan.reasoning,
+          changedFiles: [...new Set(changedFiles)],
+          diff: diffs.join("\n\n"),
+          status: "changes-applied",
+          verification: "pending",
+        }, 201);
+      }
+
+      if (url.pathname === "/api/workspace/verify") {
+        if (!env.GITHUB_TOKEN) return json({ error: "GITHUB_TOKEN is not configured on the Worker." }, 500);
+        const repository = String(data.repository ?? "").trim();
+        const branch = String(data.branch ?? "").trim();
+        if (!repository || !branch) return json({ error: "Repository and branch are required." }, 400);
+        const parsed = parseRepository(repository);
+        const runs = await githubApi<{ workflow_runs?: Array<{ id?: number; name?: string; status?: string; conclusion?: string; html_url?: string; head_branch?: string }> }>(
+          `https://api.github.com/repos/${parsed.owner}/${parsed.name}/actions/runs?branch=${encodeURIComponent(branch)}&per_page=10`,
+          env.GITHUB_TOKEN,
+        );
+        const run = (runs.workflow_runs ?? []).find(item => item.head_branch === branch);
+        if (!run) return json({
+          repository: parsed,
+          branch,
+          status: "no-ci",
+          verified: false,
+          message: "No GitHub Actions run exists for this branch. Méthis will not claim that tests passed.",
+        }, 409);
+        return json({
+          repository: parsed,
+          branch,
+          status: run.status,
+          conclusion: run.conclusion,
+          verified: run.status === "completed" && run.conclusion === "success",
+          workflow: run.name,
+          runUrl: run.html_url,
+          message: run.status === "completed" && run.conclusion === "success"
+            ? "GitHub Actions verification passed."
+            : "GitHub Actions verification has not passed.",
+        });
+      }
+
       if (url.pathname === "/api/analyze") {
         const repository = String(data.repository ?? "").trim();
         if (!repository) return json({ error: "Repository is required." }, 400);
