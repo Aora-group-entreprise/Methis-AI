@@ -6,45 +6,35 @@
   <meta name="theme-color" content="#080C15">
   <title>Methis AI</title>
   <style>
-:root{--bg:#080C15;--text:#FFFFFF;--secondary:#8A8ED6;--gradient:linear-gradient(135deg,#FF4ECD 0%,#7A5CFF 50%,#4ECDC4 100%);--border:#2A2E4A;--card:#12162A}
+:root{--bg:#0A0B14;--header:#141523;--text:#FFFFFF;--secondary:#8C8CB0;--border:#23243A;--card:#1C1D31}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;background:#080C15;color:#FFFFFF;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{margin:0;background:#0A0B14;color:#FFFFFF;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 body.drawer-open{overflow:hidden}
 button,textarea{font:inherit}
 button{cursor:pointer}
-.page{width:100%;max-width:520px;margin:0 auto;padding:0 24px 32px}
-.header{height:68px;display:flex;align-items:center;justify-content:flex-end}
-.menu-button{width:40px;height:40px;border:1px solid #2A2E4A;border-radius:12px;background:transparent;color:#fff;display:grid;place-items:center;padding:0}
-.menu-button svg{width:21px;height:21px}
-.hero{text-align:center;padding:58px 0 32px;position:relative}
-.hero-logo{width:112px;height:112px;display:block;object-fit:contain;margin:0 auto 16px}
-.hero h1{margin:0;font-size:36px;line-height:1.08;font-weight:750;letter-spacing:-.045em}
-.hero p{margin:12px auto 0;color:#8A8ED6;font-size:14px;line-height:1.55;max-width:320px}
-.repo-wrap{margin-top:0}
-.repo-box{position:relative;width:100%;height:124px;background:#12162A;border:1px solid #2A2E4A;border-radius:16px;padding:16px}
-.repo-box textarea{display:block;width:100%;height:100%;padding:0 66px 0 0;border:0;outline:0;resize:none;background:transparent;color:#fff;font-size:14px;line-height:1.55}
-.repo-box textarea::placeholder{color:#8A8ED6;opacity:.8}
-.run{position:absolute;right:10px;bottom:10px;height:40px;padding:0 16px;border:0;border-radius:11px;color:#fff;font-size:13px;font-weight:700;background:linear-gradient(135deg,#FF4ECD,#7A5CFF,#4ECDC4);box-shadow:0 8px 20px rgba(122,92,255,.2)}
-.actions{display:flex;justify-content:center;gap:12px;margin-top:16px}
-.action{height:42px;min-width:112px;padding:0 20px;border:1px solid #2A2E4A;border-radius:12px;background:transparent;color:#fff;font-size:13px;font-weight:650}
+.page{width:100%;max-width:390px;min-height:100dvh;margin:0 auto;padding:0 24px 24px;position:relative}
+.header{height:48px;margin:0 -24px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;background:#141523;border-bottom:1px solid #23243A}
+.brand{height:48px;display:flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:600}
+.brand-logo{width:24px;height:24px;display:block}
+.avatar-button{width:24px;height:24px;border:1px solid #8C8CB0;border-radius:50%;background:transparent;color:#fff;display:grid;place-items:center;padding:0}
+.avatar-button svg{width:16px;height:16px}
+.hero{text-align:center;padding:106px 0 0}
+.hero h1{margin:0;font-size:48px;line-height:1;font-weight:700;letter-spacing:-.055em}
+.hero p{margin:14px auto 0;color:#8C8CB0;font-size:13px;line-height:1.25;max-width:342px}
+.repo-wrap{margin-top:37px}
+.repo-box{position:relative;width:100%;height:64px;background:#1C1D31;border:1px solid #2F304E;border-radius:16px;padding:15px 104px 12px 16px}
+.repo-box textarea{display:block;width:100%;height:38px;padding:0;border:0;outline:0;resize:none;background:transparent;color:#fff;font-size:11px;line-height:15px}
+.repo-box textarea::placeholder{color:#6F6F8A;opacity:1}
+.run{position:absolute;right:10px;top:17px;width:88px;height:30px;padding:0;border:0;border-radius:15px;color:#fff;font-size:12px;font-weight:600;background:linear-gradient(135deg,#E93AA6,#6B7EFF);display:flex;align-items:center;justify-content:center;gap:5px}
+.actions{display:flex;gap:12px;margin-top:26px}
+.action{width:calc((100% - 12px)/2);height:42px;padding:0;border:1px solid #2F304E;border-radius:12px;background:transparent;color:#D0D0E8;font-size:13px;font-weight:500}
 .action:active{transform:scale(.98)}
-.note{text-align:center;color:#8A8ED6;font-size:11px;margin-top:11px}
-.plans{padding-top:42px}
-.plans h2{margin:0 0 16px;font-size:22px;line-height:1.2;font-weight:700;letter-spacing:-.03em}
-.plan-list{display:grid;gap:16px}
-.plan{background:#12162A;border:1px solid #2A2E4A;border-radius:16px;padding:18px}
-.plan.pro{border:1px solid transparent;background:linear-gradient(#12162A,#12162A) padding-box,linear-gradient(135deg,#FF4ECD,#7A5CFF,#4ECDC4) border-box}
-.plan-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.plan h3{margin:0;font-size:17px;font-weight:700}
-.price{margin-top:7px;font-size:20px;font-weight:750;letter-spacing:-.025em}
-.sub{margin-top:3px;color:#8A8ED6;font-size:11px}
-.badge{margin-top:1px;padding:5px 8px;border-radius:999px;color:#fff;font-size:8px;font-weight:800;letter-spacing:.08em;background:linear-gradient(135deg,#FF4ECD,#7A5CFF)}
-.features{list-style:none;padding:0;margin:18px 0 0;display:grid;gap:9px}
-.features li{font-size:12px;color:#fff;line-height:1.4}
-.features li:before{content:"✓";display:inline-block;width:18px;color:#4ECDC4;font-weight:800}
-.upgrade{width:100%;height:42px;margin-top:18px;border:0;border-radius:11px;color:#fff;font-size:13px;font-weight:700;background:linear-gradient(135deg,#FF4ECD,#7A5CFF,#4ECDC4)}
-.footer{text-align:center;padding:28px 4px 0;color:#8A8ED6;font-size:10px;line-height:1.5}
+.note{text-align:center;color:#8A8AAE;font-size:11px;margin-top:19px}
+.examples{text-align:center;color:#60607E;font-size:10px;line-height:15px;margin-top:28px;white-space:nowrap}
+.features{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:9px;text-align:center;color:#6E6E8A;font-size:9px;line-height:12px}
+.features span{white-space:nowrap}
+.footer{text-align:center;padding:300px 4px 0;color:#1C1C34;font-size:9px;line-height:12px}
 
 .drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.58);opacity:0;visibility:hidden;transition:opacity .22s ease,visibility .22s ease;z-index:20}
 .drawer{position:fixed;top:0;right:0;width:min(86vw,360px);height:100dvh;background:#0D1120;border-left:1px solid #2A2E4A;box-shadow:-18px 0 55px rgba(0,0,0,.45);transform:translateX(100%);transition:transform .26s cubic-bezier(.22,.61,.36,1);z-index:21;display:flex;flex-direction:column;padding:24px 20px calc(24px + env(safe-area-inset-bottom));}
@@ -71,62 +61,42 @@ body.drawer-open .drawer{transform:translateX(0)}
 <body>
   <main class="page">
     <header class="header">
-      <button id="menuButton" class="menu-button" aria-label="Open menu" aria-controls="sidePanel" aria-expanded="false">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-          <path d="M5 7h14"/><path d="M5 12h14"/><path d="M5 17h14"/>
+      <div class="brand">
+        <svg class="brand-logo" viewBox="0 0 24 24" aria-hidden="true">
+          <defs><linearGradient id="atomGradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF3CA4"/><stop offset=".34" stop-color="#7A5CFF"/><stop offset=".68" stop-color="#4CB5FF"/><stop offset="1" stop-color="#2EFFD2"/></linearGradient></defs>
+          <ellipse cx="12" cy="12" rx="9.5" ry="4.2" fill="none" stroke="url(#atomGradient)" stroke-width="1.7" transform="rotate(30 12 12)"/>
+          <ellipse cx="12" cy="12" rx="9.5" ry="4.2" fill="none" stroke="url(#atomGradient)" stroke-width="1.7" transform="rotate(-30 12 12)"/>
+          <ellipse cx="12" cy="12" rx="9.5" ry="4.2" fill="none" stroke="url(#atomGradient)" stroke-width="1.7" transform="rotate(90 12 12)"/>
+          <circle cx="12" cy="12" r="2" fill="url(#atomGradient)"/>
         </svg>
+        <span>Methis AI</span>
+      </div>
+      <button id="menuButton" class="avatar-button" aria-label="Open account menu" aria-controls="sidePanel" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c.8-3.3 3-5 6.5-5s5.7 1.7 6.5 5"/></svg>
       </button>
     </header>
-
     <section class="hero">
-      <img class="hero-logo" src="https://raw.githubusercontent.com/Aora-group-entreprise/Methis-AI/main/file_0000000081f88208bb42c3ed7879a73a.png" alt="Methis AI logo">
       <h1>Methis AI</h1>
-      <p>Understand your code. Fix one problem at a time.</p>
+      <p>Understand your code. Fix one problem at a time</p>
     </section>
-
     <section class="repo-wrap" aria-label="GitHub repository">
       <div class="repo-box">
-        <textarea id="repository" rows="2" placeholder="Paste your GitHub repository&#10;https://github.com/owner/repository"></textarea>
-        <button id="run" class="run" type="button">Run</button>
+        <textarea id="repository" rows="2" placeholder="Paste your GitHub repository&#10;https://github.com/owner/repotuce"></textarea>
+        <button id="run" class="run" type="button"><span aria-hidden="true">✨</span> Run</button>
       </div>
       <div class="actions">
         <button id="analyze" class="action" type="button">Analyze</button>
         <button id="fix" class="action" type="button">Fix</button>
       </div>
-      <div class="note">1 Fix = 1 logical problem</div>
-    </section>
-
-    <section class="plans">
-      <h2>Plans</h2>
-      <div class="plan-list">
-        <article class="plan">
-          <div class="plan-head">
-            <div><h3>Free</h3><div class="price">Free</div></div>
-          </div>
-          <ul class="features">
-            <li>2 bug fixes / month</li>
-            <li>5 scans / week</li>
-            <li>GitHub PR auto</li>
-          </ul>
-        </article>
-
-        <article class="plan pro">
-          <div class="plan-head">
-            <div><h3>Pro</h3><div class="price">1$ USDC / month</div><div class="sub">crypto</div></div>
-            <span class="badge">RECOMMENDED</span>
-          </div>
-          <ul class="features">
-            <li>8 bug fixes / month</li>
-            <li>10 scans / week</li>
-            <li>priority fix</li>
-            <li>GitHub PR auto</li>
-          </ul>
-          <button class="upgrade" id="upgradeButton" type="button">Upgrade to Pro</button>
-        </article>
+      <div class="note">• 1 Fix = 1 logical problem</div>
+      <div class="examples">try: facebook/react • vercel/next.js • torvalds/linux</div>
+      <div class="features">
+        <span>✓ No code stored</span>
+        <span>✓ Works with public &amp; private repos</span>
+        <span>✓ GitHub PR auto</span>
       </div>
     </section>
-
-    <footer class="footer">Cancel anytime • Secure crypto payments via USDC.</footer>
+    <footer class="footer">Race condition → Fixed</footer>
   </main>
 
   <div id="drawerBackdrop" class="drawer-backdrop"></div>
@@ -297,6 +267,7 @@ body.drawer-open .drawer{transform:translateX(0)}
     });
 
     async function updateMenuForSession(){
+      if(!supabase) return;
       const {data:{session}} = await supabase.auth.getSession();
       const signedIn = !!session;
       document.getElementById('dashboardItem').querySelector('span').textContent = signedIn ? 'Dashboard' : 'Dashboard · Sign in required';
@@ -413,14 +384,18 @@ body.drawer-open .drawer{transform:translateX(0)}
       finally{button.disabled=false;}
     });
 
-    document.getElementById('upgradeButton').addEventListener('click', async () => {
+    const upgradeButton = document.getElementById('upgradeButton');
+    if(upgradeButton) upgradeButton.addEventListener('click', async () => {
+      if(!supabase){ showInfo('Account service unavailable','<p>Analyze and Fix do not require Supabase.</p>'); return; }
       const {data:{session}} = await supabase.auth.getSession();
       if(!session){ showAuth('signin'); return; }
       showInfo('Pro', '<p>Pro upgrade is available from your authenticated Methis workspace.</p><p>Secure USDC payment will be connected here.</p>');
     });
 
-    supabase.auth.onAuthStateChange(()=>updateMenuForSession());
-    updateMenuForSession();
+    if(supabase){
+      supabase.auth.onAuthStateChange(()=>updateMenuForSession());
+      updateMenuForSession();
+    }
   </script>
 </body>
 </html>
