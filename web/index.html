@@ -294,12 +294,16 @@ body.drawer-open .drawer{transform:translateX(0)}
       closeAuth();
       if(authMode === 'signup' && !result.data.session){
         pendingRunAfterAuth = false;
+        pendingLandingRepository = '';
         showInfo('Check your email', '<p>Your account was created. Open the verification email from Supabase, then return here and sign in.</p>');
       } else if(result.data.session){
         await updateMenuForSession();
         if(pendingRunAfterAuth){
+          const repository = pendingLandingRepository;
+          const action = selectedAction;
           pendingRunAfterAuth = false;
-          await runSelectedAction();
+          pendingLandingRepository = '';
+          openDashboard(repository, action);
         } else {
           openDashboard();
         }
@@ -315,7 +319,7 @@ body.drawer-open .drawer{transform:translateX(0)}
       document.getElementById('dashboardItem').querySelector('span').textContent = signedIn ? 'Dashboard' : 'Dashboard · Sign in required';
     }
 
-    async function openDashboard(){
+    async function openDashboard(initialRepository='', initialAction='analyze'){
       closeDrawer();
       const {data:{session}} = await supabase.auth.getSession();
       if(!session){showAuth('signin');return}
@@ -341,6 +345,12 @@ body.drawer-open .drawer{transform:translateX(0)}
       </div>`;
       view.classList.add('active');
       const dashRepo=document.getElementById('dashboardRepository');
+      if(initialRepository){
+        dashRepo.value=initialRepository;
+        dashRepo.placeholder=initialAction === 'fix'
+          ? 'Paste your GitHub repository to fix\\nhttps://github.com/owner/repository'
+          : 'Paste your GitHub repository to analyze\\nhttps://github.com/owner/repository';
+      }
       const runDash=async(action)=>{const repo=dashRepo.value.trim();if(!repo){showInfo(action==='fix'?'Fix':'Analyze','<p>Paste a GitHub repository first.</p>');return;}if(action==='fix'){const problem=window.prompt('Describe one specific bug to fix:');if(!problem||!problem.trim())return;try{renderResult('Fix ready',await authRequest('/api/github-fix',{repository:repo,problem:problem.trim()}));}catch(error){showInfo('Fix failed','<p>'+escapeHtml(error.message)+'</p>')}}else{try{renderResult('Analysis ready',await authRequest('/api/analyze',{repository:repo}));}catch(error){showInfo('Analyze failed','<p>'+escapeHtml(error.message)+'</p>')}}};
       document.getElementById('dashboardRun').onclick=()=>runDash('analyze');
       document.getElementById('dashboardAnalyze').onclick=()=>runDash('analyze');
@@ -424,46 +434,39 @@ body.drawer-open .drawer{transform:translateX(0)}
     }
 
     let pendingRunAfterAuth = false;
+    let pendingLandingRepository = '';
 
     document.getElementById('run').addEventListener('click',async()=>{
-      const button=document.getElementById('run');
-      if(!supabase){
-        showAuth('signin');
-        return;
-      }
-
-      let session=null;
-      try{
-        const result=await supabase.auth.getSession();
-        session=result.data.session;
-      }catch(error){
-        console.error('Methis auth session check failed:',error);
-      }
-
-      if(!session){
-        pendingRunAfterAuth=true;
-        showAuth('signin');
-        return;
-      }
-
       const repository=document.getElementById('repository').value.trim();
       if(!repository){
         document.getElementById('repository').focus();
         return;
       }
 
-      button.disabled=true;
-      button.textContent='Working…';
-      try{
-        await runSelectedAction();
-      }catch(error){
-        showInfo('Request failed','<p>'+escapeHtml(error instanceof Error?error.message:String(error))+'</p>');
-      }finally{
-        button.disabled=false;
-        button.textContent='Run';
+      pendingLandingRepository = repository;
+      pendingRunAfterAuth = true;
+
+      if(!supabase){
+        showAuth('signin');
+        return;
       }
+
+      try{
+        const {data:{session}} = await supabase.auth.getSession();
+        if(session){
+          const action = selectedAction;
+          pendingRunAfterAuth = false;
+          pendingLandingRepository = '';
+          openDashboard(repository, action);
+          return;
+        }
+      }catch(error){
+        console.error('Methis auth session check failed:',error);
+      }
+
+      showAuth('signin');
     });
-    
+
     document.getElementById('analyze').addEventListener('click',()=>{
       setAction('analyze');
     });
