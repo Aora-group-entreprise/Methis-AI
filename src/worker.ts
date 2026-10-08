@@ -20,6 +20,31 @@ function json(body: unknown, status = 200): Response {
   });
 }
 
+function parseRepository(input: string): { owner: string; name: string; ref?: string } {
+  const clean = input.replace(/^https?:\\/\\/(www\\.)?github\\.com\\//, "").replace(/\\.git$/, "").replace(/\\/$/, "");
+  const parts = clean.split("/");
+  if (parts.length < 2 || !parts[0] || !parts[1]) throw new Error("GitHub repository must look like owner/repository.");
+  if (!/^[A-Za-z0-9_.-]+$/.test(parts[0]) || !/^[A-Za-z0-9_.-]+$/.test(parts[1])) throw new Error("Invalid GitHub repository name.");
+  return { owner: parts[0], name: parts[1], ref: parts.slice(2).join("/") || undefined };
+}
+
+async function githubApi<T>(url: string, token?: string): Promise<T> {
+  const headers: Record<string, string> = { accept: "application/vnd.github+json", "user-agent": "methis-ai" };
+  if (token) headers.authorization = `Bearer ${token}`;
+  const response = await fetch(url, { headers });
+  if (!response.ok) throw new Error(`GitHub request failed: ${response.status} ${await response.text()}`);
+  return await response.json() as T;
+}
+
+function withToken<T>(token: string | undefined, fn: () => Promise<T>): Promise<T> {
+  const previous = process.env.GITHUB_TOKEN;
+  if (token) process.env.GITHUB_TOKEN = token;
+  return fn().finally(() => {
+    if (previous === undefined) delete process.env.GITHUB_TOKEN;
+    else process.env.GITHUB_TOKEN = previous;
+  });
+}
+
 async function readBody(request: Request): Promise<Record<string, unknown>> {
   const text = await request.text();
   if (text.length > 100_000) throw new Error("Request too large.");
@@ -52,6 +77,54 @@ export default {
       }
 
       const data = await readBody(request);
+
+      if (url.pathname === "/api/workspace/tree") {
+        const repository = String(data.repository ?? "").trim();
+        const requestedRef = String(data.ref ?? "").trim();
+        if (!repository) return json({ error: "Repository is required." }, 400);
+        const parsed = parseRepository(repository);
+        const ref = requestedRef || parsed.ref || "HEAD";
+        const tree = await githubApi<{ tree?: Array<{ path?: string; type?: string; size?: number; sha?: string }>; truncated?: boolean }>(
+          `https://api.github.com/repos/${parsed.owner}/${parsed.name}/git/trees/${encodeURIComponent(ref)}?recursive=1`,
+          env.GITHUB_TOKEN,
+        );
+        if (tree.truncated) return json({ error: "GitHub returned a truncated tree. This repository is too large for the current workspace view." }, 413);
+        const files = (tree.tree ?? [])
+          .filter(item => item.type === "blob" && item.path && item.sha)
+          .filter(item => !/(^|\\/)(?:\\.env(?:\\..*)?|.*(?:secret|credential).*)$/i.test(item.path!))
+          .filter(item => !/\\.(?:pem|key|p12|pfx)$/i.test(item.path!))
+          .filter(item => (item.size ?? 0) <= 2_000_000)
+          .slice(0, 2000)
+          .map(item => ({ path: item.path, size: item.size ?? 0, sha: item.sha }));
+        return json({ repository: parsed, branch: ref, files });
+      }
+
+      if (url.pathname === "/api/workspace/file") {
+        const repository = String(data.repository ?? "").trim();
+        const path = String(data.path ?? "").trim();
+        const requestedRef = String(data.ref ?? "").trim();
+        if (!repository) return json({ error: "Repository is required." }, 400);
+        if (!path || path.length > 500 || path.includes("..")) return json({ error: "A safe repository file path is required." }, 400);
+        if (/(^|\\/)(?:\\.env(?:\\..*)?|.*(?:secret|credential).*)$/i.test(path) || /\\.(?:pem|key|p12|pfx)$/i.test(path)) {
+          return json({ error: "This file type is protected from workspace preview." }, 403);
+        }
+        const parsed = parseRepository(repository);
+        const ref = requestedRef || parsed.ref || "HEAD";
+        const tree = await githubApi<{ tree?: Array<{ path?: string; type?: string; size?: number; sha?: string }> }>(
+          `https://api.github.com/repos/${parsed.owner}/${parsed.name}/git/trees/${encodeURIComponent(ref)}?recursive=1`,
+          env.GITHUB_TOKEN,
+        );
+        const entry = (tree.tree ?? []).find(item => item.type === "blob" && item.path === path && item.sha);
+        if (!entry) return json({ error: "File not found on this branch." }, 404);
+        if ((entry.size ?? 0) > 2_000_000) return json({ error: "File is too large for workspace preview." }, 413);
+        const blob = await githubApi<{ content?: string; encoding?: string }>(
+          `https://api.github.com/repos/${parsed.owner}/${parsed.name}/git/blobs/${entry.sha}`,
+          env.GITHUB_TOKEN,
+        );
+        if (blob.encoding !== "base64" || !blob.content) return json({ error: "File content is not available as text." }, 415);
+        const content = atob(blob.content.replace(/\\s/g, ""));
+        return json({ repository: parsed, branch: ref, path, content });
+      }
 
       if (url.pathname === "/api/analyze") {
         const repository = String(data.repository ?? "").trim();
