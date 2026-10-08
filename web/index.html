@@ -497,25 +497,7 @@ body.drawer-open .drawer{transform:translateX(0)}
       showAuth('signin');
     });
 
-    function bindLandingModeButtons(){
-      const analyzeButton=document.getElementById('analyze');
-      const fixButton=document.getElementById('fix');
-      if(!analyzeButton || !fixButton) return;
-
-      analyzeButton.onclick=()=>setAction('analyze');
-      fixButton.onclick=()=>setAction('fix');
-
-      analyzeButton.addEventListener('touchend',(event)=>{
-        event.preventDefault();
-        setAction('analyze');
-      },{passive:false});
-      fixButton.addEventListener('touchend',(event)=>{
-        event.preventDefault();
-        setAction('fix');
-      },{passive:false});
-    }
-
-    bindLandingModeButtons();
+    // Analyze/Fix listeners are bound once below with the main landing flow.
 
     const upgradeButton = document.getElementById('upgradeButton');
     if(upgradeButton) upgradeButton.addEventListener('click', async () => {
@@ -586,9 +568,8 @@ body.drawer-open .drawer{transform:translateX(0)}
           showInfoFallback(action==='fix'?'Fix ready':'Analysis ready','<p><strong>'+String(name).replace(/[&<>]/g,'')+'</strong></p>'+(d.summary?'<p>'+String(d.summary).replace(/[&<>]/g,'')+'</p>':''));
         }catch(e){showInfoFallback(action+' failed','<p>'+String(e.message||e).replace(/[&<>]/g,'')+'</p>');}
       };
-      if($('analyze'))$('analyze').onclick=()=>run('analyze');
-      if($('fix'))$('fix').onclick=()=>run('fix');
-      if($('run'))$('run').onclick=()=>run('analyze');
+      // Do not bind the landing Analyze/Fix/Run controls here.
+      // The main application owns these handlers so mode selection cannot be overwritten.
       if($('analyzeItem'))$('analyzeItem').onclick=()=>run('analyze');
       if($('fixItem'))$('fixItem').onclick=()=>run('fix');
       if($('aboutItem'))$('aboutItem').onclick=()=>showInfoFallback('About','<p><strong>Methis AI</strong> is a conservative AI coding agent designed to understand a repository and fix one specific problem at a time.</p>');
