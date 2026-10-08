@@ -22,7 +22,7 @@ button{cursor:pointer}
 .hero h1{margin:0;font-size:36px;line-height:1.08;font-weight:750;letter-spacing:-.045em}
 .hero p{margin:12px auto 0;color:#8A8ED6;font-size:14px;line-height:1.55;max-width:320px}
 .repo-wrap{margin-top:0}
-.repo-box{position:relative;width:100%;height:124px;background:#12162A;border:1px solid #2A2E4A;border-radius:16px;padding:16px;overflow:hidden}.repo-content,.repo-mode-preview{position:absolute;inset:0;padding:16px;transition:transform .42s cubic-bezier(.22,.61,.36,1)}.repo-content{transform:translateX(0)}.repo-mode-preview{transform:translateX(105%);pointer-events:none}.repo-mode-preview-text{display:block;width:100%;height:100%;padding:0 66px 0 0;color:#8A8ED6;opacity:.8;font-size:14px;line-height:1.55;white-space:pre-line}.repo-preview-run{position:absolute;right:10px;bottom:10px;height:40px;padding:0 16px;border-radius:11px;color:#fff;font-size:13px;font-weight:700;background:linear-gradient(135deg,#FF4ECD,#7A5CFF,#4ECDC4);box-shadow:0 8px 20px rgba(122,92,255,.2);display:flex;align-items:center}.repo-box.switch-to-fix .repo-content{transform:translateX(-105%)}.repo-box.switch-to-fix .repo-mode-preview{transform:translateX(0)}.repo-box.switch-to-analyze .repo-content{transform:translateX(105%)}.repo-box.switch-to-analyze .repo-mode-preview{transform:translateX(0)}.repo-box.no-transition .repo-content,.repo-box.no-transition .repo-mode-preview{transition:none}
+.repo-box{position:relative;width:100%;height:124px;overflow:hidden}.repo-content,.repo-mode-preview{position:absolute;inset:0;padding:16px;background:#12162A;border:1px solid #2A2E4A;border-radius:16px;transition:transform .52s cubic-bezier(.22,.61,.36,1)}.repo-content{transform:translateX(0)}.repo-mode-preview{transform:translateX(105%);pointer-events:none}.repo-mode-preview-text{display:block;width:100%;height:100%;padding:0 66px 0 0;color:#8A8ED6;opacity:.8;font-size:14px;line-height:1.55;white-space:pre-line}.repo-preview-run{position:absolute;right:10px;bottom:10px;height:40px;padding:0 16px;border-radius:11px;color:#fff;font-size:13px;font-weight:700;background:linear-gradient(135deg,#FF4ECD,#7A5CFF,#4ECDC4);box-shadow:0 8px 20px rgba(122,92,255,.2);display:flex;align-items:center}.repo-box.switch-to-fix .repo-content{transform:translateX(calc(-100% - 16px))}.repo-box.switch-to-fix .repo-mode-preview{transform:translateX(calc(100% + 16px))}.repo-box.switch-to-fix .repo-mode-preview{transform:translateX(0)}.repo-box.switch-to-analyze .repo-content{transform:translateX(calc(100% + 16px))}.repo-box.switch-to-analyze .repo-mode-preview{transform:translateX(calc(-100% - 16px))}.repo-box.switch-to-analyze .repo-mode-preview{transform:translateX(0)}.repo-box.no-transition .repo-content,.repo-box.no-transition .repo-mode-preview{transition:none}
 .repo-box textarea{display:block;width:100%;height:100%;padding:0 66px 0 0;border:0;outline:0;resize:none;background:transparent;color:#fff;font-size:14px;line-height:1.55}
 .repo-box textarea::placeholder{color:#8A8ED6;opacity:.8}
 .run{position:absolute;right:10px;bottom:10px;height:40px;padding:0 16px;border:0;border-radius:11px;color:#fff;font-size:13px;font-weight:700;background:linear-gradient(135deg,#FF4ECD,#7A5CFF,#4ECDC4);box-shadow:0 8px 20px rgba(122,92,255,.2)}
@@ -377,6 +377,8 @@ body.drawer-open .drawer{transform:translateX(0)}
     document.getElementById('licenseItem').addEventListener('click',()=>showInfo('License','<p>Methis AI web interface and application code are maintained by Aora Group.</p><p>Third-party dependencies remain under their respective licenses. Supabase JS is distributed under its own open-source license.</p>'));
     let selectedAction = 'analyze';
     document.getElementById('analyze').classList.add('active');
+    document.getElementById('analyze').setAttribute('aria-pressed','true');
+    document.getElementById('fix').setAttribute('aria-pressed','false');
 
     let landingAnimationTimer = null;
 
@@ -394,7 +396,7 @@ body.drawer-open .drawer{transform:translateX(0)}
       const direction = action === 'fix' ? 'switch-to-fix' : 'switch-to-analyze';
 
       clearTimeout(landingAnimationTimer);
-      preview.textContent = nextPlaceholder.replace('\\n','\\n');
+      preview.innerHTML = nextPlaceholder.replace(/\\\\n/g,'<br>');
       box.classList.remove('switch-to-fix','switch-to-analyze','no-transition');
       void box.offsetWidth;
       box.classList.add(direction);
