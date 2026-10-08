@@ -396,7 +396,7 @@ body.drawer-open .drawer{transform:translateX(0)}
       const direction = action === 'fix' ? 'switch-to-fix' : 'switch-to-analyze';
 
       clearTimeout(landingAnimationTimer);
-      preview.innerHTML = nextPlaceholder.replace(/\\\\n/g,'<br>');
+      preview.innerHTML = nextPlaceholder.replace(/\\n/g,'<br>');
       box.classList.remove('switch-to-fix','switch-to-analyze','no-transition');
       void box.offsetWidth;
       box.classList.add(direction);
@@ -413,7 +413,7 @@ body.drawer-open .drawer{transform:translateX(0)}
         void box.offsetWidth;
         box.classList.remove('no-transition');
         field.focus();
-      }, 430);
+      }, 540);
     }
 
     async function authRequest(path,payload){
