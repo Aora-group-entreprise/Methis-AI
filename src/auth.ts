@@ -175,6 +175,17 @@ export function planInfo() {
   }));
 }
 
+export function guestAccount(): Account {
+  const account: Account = {
+    id: "guest",
+    email: "",
+    plan: "free",
+    createdAt: "",
+    usage: { day: dayKey(), analyses: 0, fixes: 0 },
+  };
+  return account;
+}
+
 export function publicAccount(account: Account) {
   const released = releasedFixes(account);
   return {
