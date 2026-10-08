@@ -117,10 +117,7 @@ function closeModal(){
 }
 modalClose.addEventListener('click',closeModal);
 modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
-openMethis.addEventListener('click',()=>{
-  closeModal();
-  document.getElementById('product').scrollIntoView({behavior:'smooth',block:'start'});
-});
+openMethis.addEventListener('click',()=>{ window.location.href='/app/'; });
 document.querySelectorAll('[data-start]').forEach(b=>b.onclick=()=>openModal(b.dataset.start==='pro'?'Pro plan':'Free plan'));
 document.getElementById('startMenu').onclick=()=>{closeMenu();openModal('Start with Méthis AI')};
 document.querySelectorAll('[data-scroll]').forEach(b=>b.onclick=()=>{document.getElementById(b.dataset.scroll).scrollIntoView({behavior:'smooth'});closeMenu()});
