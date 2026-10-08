@@ -230,13 +230,35 @@ body.drawer-open .drawer{transform:translateX(0)}
       if(event.key === 'Escape') closeDrawer();
     });
 
+    // Keep the core UI independent from optional authentication.
+    // Auth initialization must never prevent the menu or landing actions from working.
+    const infoTitle = document.getElementById('infoTitle');
+    const infoBody = document.getElementById('infoBody');
+    const infoModal = document.getElementById('infoModal');
+    const infoClose = document.getElementById('infoClose');
+
+    function showInfo(title, html){
+      infoTitle.textContent = title;
+      infoBody.innerHTML = html;
+      infoModal.hidden = false;
+      closeDrawer();
+    }
+    infoClose.onclick = () => { infoModal.hidden = true; };
+    infoModal.addEventListener('click', e => { if(e.target === infoModal) infoModal.hidden = true; });
+
     const SUPABASE_URL = 'https://dyqkgkqlihcrhrpcbjgh.supabase.co';
     const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_bmraW60kS5DKdI2qO_7aNA_WoHYgHq';
-    const supabaseClient = window.supabase && typeof window.supabase.createClient === 'function' ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
-    if(!supabaseClient){
-      showInfo('Connection error','<p>Methis could not initialize its authentication service. Please refresh the page and try again.</p>');
+    let supabase = null;
+    try{
+      if(window.supabase && typeof window.supabase.createClient === 'function'){
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+      }
+    }catch(error){
+      console.error('Methis authentication initialization failed:', error);
     }
-    const supabase = supabaseClient;
+    if(!supabase){
+      console.warn('Methis authentication is unavailable; landing UI remains available.');
+    }
 
     const authModal = document.getElementById('authModal');
     const authForm = document.getElementById('authForm');
@@ -348,15 +370,6 @@ body.drawer-open .drawer{transform:translateX(0)}
     }
     function escapeHtml(value){return value.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
     function closeAppView(){document.getElementById('appView').classList.remove('active');document.getElementById('appView').innerHTML=''}
-
-    function showInfo(title, html){
-      document.getElementById('infoTitle').textContent=title;
-      document.getElementById('infoBody').innerHTML=html;
-      document.getElementById('infoModal').hidden=false;
-      closeDrawer();
-    }
-    document.getElementById('infoClose').onclick=()=>document.getElementById('infoModal').hidden=true;
-    document.getElementById('infoModal').addEventListener('click',e=>{if(e.target.id==='infoModal')e.target.hidden=true});
 
     document.getElementById('analyzeItem').addEventListener('click',()=>{setAction('analyze');closeDrawer();analyzeRepository()});
     document.getElementById('fixItem').addEventListener('click',()=>{setAction('fix');closeDrawer();fixRepository()});
