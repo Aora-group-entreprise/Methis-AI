@@ -9,6 +9,7 @@ interface Env {
   GITHUB_TOKEN?: string;
   METHIS_MODEL_URL?: string;
   METHIS_MODEL?: string;
+  METHIS_MODEL_TOKEN?: string;
 }
 
 function json(body: unknown, status = 200): Response {
@@ -69,7 +70,7 @@ export default {
 
     try {
       if (url.pathname === "/api/health" && request.method === "GET") {
-        const model = new LocalQwenModel(env.METHIS_MODEL_URL, env.METHIS_MODEL);
+        const model = new LocalQwenModel(env.METHIS_MODEL_URL, env.METHIS_MODEL, env.METHIS_MODEL_TOKEN);
         return json({
           ok: true,
           engine: "Méthis AI",
@@ -221,6 +222,7 @@ export default {
           token: env.GITHUB_TOKEN,
           modelUrl: env.METHIS_MODEL_URL,
           modelName: env.METHIS_MODEL,
+          modelToken: env.METHIS_MODEL_TOKEN,
         });
         return json(result, result.status === "verified" ? 201 : 422);
       }
