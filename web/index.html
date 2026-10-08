@@ -23,10 +23,9 @@ button{cursor:pointer}
 .hero p{margin:12px auto 0;color:#8A8ED6;font-size:14px;line-height:1.55;max-width:320px}
 .methis-mode{margin-top:0}
 .methis-mode-window{position:relative;width:100%;height:124px;overflow:hidden}
-.methis-mode-card{position:absolute;inset:0;padding:16px;background:#12162A;border:1px solid #2A2E4A;border-radius:16px;transform:translate3d(100%,0,0);transition:transform .56s cubic-bezier(.22,.61,.36,1);will-change:transform}
-.methis-mode-card.current{transform:translate3d(0,0,0)}
-.methis-mode-card.exit-left{transform:translate3d(-100%,0,0)}
-.methis-mode-card.exit-right{transform:translate3d(100%,0,0)}
+.methis-mode-track{display:flex;width:200%;height:100%;transform:translate3d(0,0,0);transition:transform .56s cubic-bezier(.22,.61,.36,1);will-change:transform}
+.methis-mode-track.show-fix{transform:translate3d(-50%,0,0)}
+.methis-mode-card{position:relative;flex:0 0 50%;width:50%;height:100%;padding:16px;background:#12162A;border:1px solid #2A2E4A;border-radius:16px}
 .methis-mode-card textarea{display:block;width:100%;height:100%;padding:0 66px 0 0;border:0;outline:0;resize:none;background:transparent;color:#fff;font-size:14px;line-height:1.55}
 .methis-mode-card textarea::placeholder{color:#8A8ED6;opacity:.8}
 .methis-mode-card .methis-mode-run{position:absolute;right:10px;bottom:10px;height:40px;padding:0 16px;border:0;border-radius:11px;color:#fff;font-size:13px;font-weight:700;background:linear-gradient(135deg,#FF4ECD,#7A5CFF,#4ECDC4);box-shadow:0 8px 20px rgba(122,92,255,.2)}
@@ -86,13 +85,15 @@ body.drawer-open .drawer{transform:translateX(0)}
     </section>
     <section class="methis-mode" aria-label="GitHub repository">
       <div class="methis-mode-window" id="methisModeWindow">
-        <div class="methis-mode-card current" id="methisAnalyzeCard">
-          <textarea id="methisAnalyzeRepository" rows="2" placeholder="Paste your GitHub repository&#10;https://github.com/owner/repository"></textarea>
-          <button id="methisAnalyzeRun" class="methis-mode-run" type="button">Run</button>
-        </div>
-        <div class="methis-mode-card" id="methisFixCard" aria-hidden="true">
-          <textarea id="methisFixRepository" rows="2" placeholder="Paste your GitHub repository to fix&#10;https://github.com/owner/repository"></textarea>
-          <button id="methisFixRun" class="methis-mode-run" type="button">Run</button>
+        <div class="methis-mode-track" id="methisModeTrack">
+          <div class="methis-mode-card" id="methisAnalyzeCard">
+            <textarea id="methisAnalyzeRepository" rows="2" placeholder="Paste your GitHub repository&#10;https://github.com/owner/repository"></textarea>
+            <button id="methisAnalyzeRun" class="methis-mode-run" type="button">Run</button>
+          </div>
+          <div class="methis-mode-card" id="methisFixCard" aria-hidden="true">
+            <textarea id="methisFixRepository" rows="2" placeholder="Paste your GitHub repository to fix&#10;https://github.com/owner/repository"></textarea>
+            <button id="methisFixRun" class="methis-mode-run" type="button">Run</button>
+          </div>
         </div>
       </div>
       <div class="actions">
@@ -375,14 +376,15 @@ body.drawer-open .drawer{transform:translateX(0)}
     function escapeHtml(value){return value.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
     function closeAppView(){document.getElementById('appView').classList.remove('active');document.getElementById('appView').innerHTML=''}
 
-    document.getElementById('analyzeItem').addEventListener('click',()=>{setAction('analyze');closeDrawer();analyzeRepository()});
-    document.getElementById('fixItem').addEventListener('click',()=>{setAction('fix');closeDrawer();fixRepository()});
+    document.getElementById('analyzeItem').addEventListener('click',()=>{setAction('analyze');closeDrawer();document.getElementById('methisAnalyzeRepository').focus()});
+    document.getElementById('fixItem').addEventListener('click',()=>{setAction('fix');closeDrawer();document.getElementById('methisFixRepository').focus()});
     document.getElementById('dashboardItem').addEventListener('click',openDashboard);
     document.getElementById('signinItem').addEventListener('click',()=>showAuth('signin'));
     document.getElementById('signupItem').addEventListener('click',()=>showAuth('signup'));
     document.getElementById('aboutItem').addEventListener('click',()=>showInfo('About','<p><strong>Methis AI</strong> is a conservative AI coding agent designed to understand a repository and fix one specific problem at a time.</p><p>It uses a local open-weight coding model and validates changes before they are prepared for GitHub.</p>'));
     document.getElementById('licenseItem').addEventListener('click',()=>showInfo('License','<p>Methis AI web interface and application code are maintained by Aora Group.</p><p>Third-party dependencies remain under their respective licenses. Supabase JS is distributed under its own open-source license.</p>'));
     let selectedAction = 'analyze';
+    const methisModeTrack=document.getElementById('methisModeTrack');
     const methisAnalyzeCard=document.getElementById('methisAnalyzeCard');
     const methisFixCard=document.getElementById('methisFixCard');
     const methisAnalyzeButton=document.getElementById('methisAnalyzeButton');
@@ -392,26 +394,23 @@ body.drawer-open .drawer{transform:translateX(0)}
       if(action===selectedAction) return;
 
       const goingToFix=action==='fix';
-      const leaving=goingToFix ? methisAnalyzeCard : methisFixCard;
-      const entering=goingToFix ? methisFixCard : methisAnalyzeCard;
 
-      leaving.classList.remove('current','exit-left','exit-right');
-      entering.classList.remove('current','exit-left','exit-right');
-      leaving.classList.add(goingToFix ? 'exit-left' : 'exit-right');
-      entering.classList.add('current');
+      // The two real input bars live side-by-side in one 200% track.
+      // Moving the track exposes the other bar instead of swapping a placeholder.
+      methisModeTrack.classList.toggle('show-fix',goingToFix);
 
       methisAnalyzeButton.classList.toggle('active',!goingToFix);
       methisFixButton.classList.toggle('active',goingToFix);
       methisAnalyzeButton.setAttribute('aria-pressed',String(!goingToFix));
       methisFixButton.setAttribute('aria-pressed',String(goingToFix));
-      entering.setAttribute('aria-hidden','false');
-      leaving.setAttribute('aria-hidden','true');
+
+      methisAnalyzeCard.setAttribute('aria-hidden',String(goingToFix));
+      methisFixCard.setAttribute('aria-hidden',String(!goingToFix));
       selectedAction=action;
 
       window.setTimeout(()=>{
-        leaving.classList.remove('exit-left','exit-right');
         (goingToFix ? document.getElementById('methisFixRepository') : document.getElementById('methisAnalyzeRepository')).focus();
-      },580);
+      },560);
     }
 
     methisAnalyzeButton.addEventListener('click',()=>setAction('analyze'));
