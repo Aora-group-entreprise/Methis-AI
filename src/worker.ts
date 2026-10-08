@@ -21,7 +21,7 @@ function json(body: unknown, status = 200): Response {
 }
 
 function parseRepository(input: string): { owner: string; name: string; ref?: string } {
-  const clean = input.replace(/^https?:\\/\\/(www\\.)?github\\.com\\//, "").replace(/\\.git$/, "").replace(/\\/$/, "");
+  const clean = input.replace(/^https?:\/\/(www\.)?github\.com\//, "").replace(/\.git$/, "").replace(/\/$/, "");
   const parts = clean.split("/");
   if (parts.length < 2 || !parts[0] || !parts[1]) throw new Error("GitHub repository must look like owner/repository.");
   if (!/^[A-Za-z0-9_.-]+$/.test(parts[0]) || !/^[A-Za-z0-9_.-]+$/.test(parts[1])) throw new Error("Invalid GitHub repository name.");
@@ -106,8 +106,8 @@ export default {
         if (tree.truncated) return json({ error: "GitHub returned a truncated tree. This repository is too large for the current workspace view." }, 413);
         const files = (tree.tree ?? [])
           .filter(item => item.type === "blob" && item.path && item.sha)
-          .filter(item => !/(^|\\/)(?:\\.env(?:\\..*)?|.*(?:secret|credential).*)$/i.test(item.path!))
-          .filter(item => !/\\.(?:pem|key|p12|pfx)$/i.test(item.path!))
+          .filter(item => !/(^|\/)(?:\.env(?:\..*)?|.*(?:secret|credential).*)$/i.test(item.path!))
+          .filter(item => !/\.(?:pem|key|p12|pfx)$/i.test(item.path!))
           .filter(item => (item.size ?? 0) <= 2_000_000)
           .slice(0, 2000)
           .map(item => ({ path: item.path, size: item.size ?? 0, sha: item.sha }));
@@ -120,7 +120,7 @@ export default {
         const requestedRef = String(data.ref ?? "").trim();
         if (!repository) return json({ error: "Repository is required." }, 400);
         if (!path || path.length > 500 || path.includes("..")) return json({ error: "A safe repository file path is required." }, 400);
-        if (/(^|\\/)(?:\\.env(?:\\..*)?|.*(?:secret|credential).*)$/i.test(path) || /\\.(?:pem|key|p12|pfx)$/i.test(path)) {
+        if (/(^|\/)(?:\.env(?:\..*)?|.*(?:secret|credential).*)$/i.test(path) || /\.(?:pem|key|p12|pfx)$/i.test(path)) {
           return json({ error: "This file type is protected from workspace preview." }, 403);
         }
         const parsed = parseRepository(repository);
@@ -137,7 +137,7 @@ export default {
           env.GITHUB_TOKEN,
         );
         if (blob.encoding !== "base64" || !blob.content) return json({ error: "File content is not available as text." }, 415);
-        const content = atob(blob.content.replace(/\\s/g, ""));
+        const content = atob(blob.content.replace(/\s/g, ""));
         return json({ repository: parsed, branch: ref, path, content });
       }
 
