@@ -315,10 +315,16 @@ body.drawer-open .drawer{transform:translateX(0)}
       if(result.error){authStatus.textContent=result.error.message;return}
       closeAuth();
       if(authMode === 'signup' && !result.data.session){
+        pendingRunAfterAuth = false;
         showInfo('Check your email', '<p>Your account was created. Open the verification email from Supabase, then return here and sign in.</p>');
       } else if(result.data.session){
         await updateMenuForSession();
-        openDashboard();
+        if(pendingRunAfterAuth){
+          pendingRunAfterAuth = false;
+          await runSelectedAction();
+        } else {
+          openDashboard();
+        }
       } else {
         await updateMenuForSession();
       }
@@ -439,11 +445,32 @@ body.drawer-open .drawer{transform:translateX(0)}
       else await analyzeRepository();
     }
 
+    let pendingRunAfterAuth = false;
+
     document.getElementById('run').addEventListener('click',async()=>{
       const button=document.getElementById('run');
+      const repository=document.getElementById('repository').value.trim();
+      if(!repository){
+        document.getElementById('repository').focus();
+        return;
+      }
+
+      if(!supabase){
+        showInfo('Sign in required','<p>Please sign in or sign up before running Methis AI.</p>');
+        return;
+      }
+
+      const {data:{session}} = await supabase.auth.getSession();
+      if(!session){
+        pendingRunAfterAuth = true;
+        showAuth('signin');
+        return;
+      }
+
       button.disabled=true;
       button.textContent='Working…';
-      try{await runSelectedAction();}catch(error){showInfo('Request failed','<p>'+escapeHtml(error instanceof Error?error.message:String(error))+'</p>');}
+      try{await runSelectedAction();}
+      catch(error){showInfo('Request failed','<p>'+escapeHtml(error instanceof Error?error.message:String(error))+'</p>');}
       finally{button.disabled=false;button.textContent='Run';}
     });
     document.getElementById('analyze').addEventListener('click',()=>{
