@@ -113,7 +113,7 @@ export async function runCloudMethisEngine(input: {
   const repo = parseRepo(input.repository);
   const branch = `methis/agent-${Date.now().toString(36)}`;
   const baseSha = await branchSha(repo, input.baseBranch, input.token);
-  await createBranch(repo, branch, baseSha);
+  await createBranch(repo, branch, baseSha, input.token);
 
   const model = new LocalQwenModel(input.modelUrl, input.modelName);
   let errorOutput = "";
