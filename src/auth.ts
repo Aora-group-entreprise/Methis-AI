@@ -183,15 +183,8 @@ const GUEST_ACCOUNT: Account = {
 };
 
 export function guestAccount(): Account {
-  const account: Account = GUEST_ACCOUNT;
-    id: "guest",
-    email: "",
-    plan: "free",
-    createdAt: "",
-    usage: { day: dayKey(), analyses: 0, fixes: 0 },
-  };
-  ensureCycles(account);
-  return account;
+  ensureCycles(GUEST_ACCOUNT);
+  return GUEST_ACCOUNT;
 }
 
 export function publicAccount(account: Account) {
