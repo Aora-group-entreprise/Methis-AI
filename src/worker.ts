@@ -2,7 +2,9 @@ import { LocalQwenModel } from "./model.js";
 import { loadGitHubRepository } from "./github.js";
 import { createFixPullRequest } from "./github-fix.js";
 
+interface AssetsBinding { fetch(request: Request): Promise<Response>; }
 interface Env {
+  ASSETS?: AssetsBinding;
   GITHUB_TOKEN?: string;
   METHIS_MODEL_URL?: string;
   METHIS_MODEL?: string;
@@ -30,10 +32,7 @@ export default {
 
     try {
       if (url.pathname === "/api/health" && request.method === "GET") {
-        const model = new LocalQwenModel(
-          env.METHIS_MODEL_URL,
-          env.METHIS_MODEL,
-        );
+        const model = new LocalQwenModel(env.METHIS_MODEL_URL, env.METHIS_MODEL);
         return json({
           ok: true,
           engine: "Méthis AI",
@@ -42,6 +41,10 @@ export default {
           qwen: await model.health(),
           runtime: "cloudflare-worker",
         });
+      }
+
+      if (!url.pathname.startsWith("/api/") && request.method === "GET" && env.ASSETS) {
+        return env.ASSETS.fetch(request);
       }
 
       if (request.method !== "POST") {
@@ -73,10 +76,7 @@ export default {
         if (!problem) return json({ error: "A specific bug description is required." }, 400);
 
         const remote = await loadGitHubRepository(repository);
-        const model = new LocalQwenModel(
-          env.METHIS_MODEL_URL,
-          env.METHIS_MODEL,
-        );
+        const model = new LocalQwenModel(env.METHIS_MODEL_URL, env.METHIS_MODEL);
 
         const plan = await model.plan({
           repository: {

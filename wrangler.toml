@@ -3,6 +3,10 @@ main = "dist/worker.js"
 compatibility_date = "2026-10-08"
 compatibility_flags = ["nodejs_compat"]
 
+[assets]
+directory = "./web"
+binding = "ASSETS"
+
 [vars]
 METHIS_MODEL_URL = "https://YOUR-MODEL-ENDPOINT/v1/chat/completions"
 METHIS_MODEL = "Qwen/Qwen3-Coder-Next"
