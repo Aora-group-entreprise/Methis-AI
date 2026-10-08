@@ -246,7 +246,11 @@ body.drawer-open .drawer{transform:translateX(0)}
 
     const SUPABASE_URL = 'https://dyqkgkqlihcrhrpcbjgh.supabase.co';
     const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_bmraW60kS5DKdI2qO_7aNA_WoHYgHq';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    const supabaseClient = window.supabase?.createClient?.(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    if(!supabaseClient){
+      showInfo('Connection error','<p>Methis could not initialize its authentication service. Please refresh the page and try again.</p>');
+    }
+    const supabase = supabaseClient;
 
     const authModal = document.getElementById('authModal');
     const authForm = document.getElementById('authForm');
@@ -342,6 +346,7 @@ body.drawer-open .drawer{transform:translateX(0)}
     }
 
     async function authRequest(path,payload){
+      if(!supabase) throw new Error('Authentication service is unavailable. Refresh the page and try again.');
       const {data:{session}}=await supabase.auth.getSession();
       if(!session){showAuth('signin');return null;}
       const response=await fetch(path,{
@@ -366,7 +371,7 @@ body.drawer-open .drawer{transform:translateX(0)}
 
     async function analyzeRepository(){
       const repository=document.getElementById('repository').value.trim();
-      if(!repository){document.getElementById('repository').focus();return;}
+      if(!repository){showInfo('Analyze','<p>Paste a GitHub repository first.</p>');document.getElementById('repository').focus();return;}
       try{
         showInfo('Analyze','<p>Analyzing the repository…</p>');
         const data=await authRequest('/api/analyze',{repository});
@@ -376,7 +381,7 @@ body.drawer-open .drawer{transform:translateX(0)}
 
     async function fixRepository(){
       const repository=document.getElementById('repository').value.trim();
-      if(!repository){document.getElementById('repository').focus();return;}
+      if(!repository){showInfo('Fix','<p>Paste a GitHub repository first.</p>');document.getElementById('repository').focus();return;}
       const problem=window.prompt('Describe one specific bug to fix:');
       if(!problem || !problem.trim()) return;
       try{
@@ -393,9 +398,25 @@ body.drawer-open .drawer{transform:translateX(0)}
       else await analyzeRepository();
     }
 
-    document.getElementById('run').addEventListener('click',runSelectedAction);
-    document.getElementById('analyze').addEventListener('click',()=>{setAction('analyze');analyzeRepository()});
-    document.getElementById('fix').addEventListener('click',()=>{setAction('fix');fixRepository()});
+    document.getElementById('run').addEventListener('click',async()=>{
+      const button=document.getElementById('run');
+      button.disabled=true;
+      button.textContent='Working…';
+      try{await runSelectedAction();}catch(error){showInfo('Request failed','<p>'+escapeHtml(error instanceof Error?error.message:String(error))+'</p>');}
+      finally{button.disabled=false;button.textContent='Run';}
+    });
+    document.getElementById('analyze').addEventListener('click',async()=>{
+      const button=document.getElementById('analyze');
+      button.disabled=true;
+      try{setAction('analyze');await analyzeRepository();}catch(error){showInfo('Analyze failed','<p>'+escapeHtml(error instanceof Error?error.message:String(error))+'</p>');}
+      finally{button.disabled=false;}
+    });
+    document.getElementById('fix').addEventListener('click',async()=>{
+      const button=document.getElementById('fix');
+      button.disabled=true;
+      try{setAction('fix');await fixRepository();}catch(error){showInfo('Fix failed','<p>'+escapeHtml(error instanceof Error?error.message:String(error))+'</p>');}
+      finally{button.disabled=false;}
+    });
 
     document.getElementById('upgradeButton').addEventListener('click', async () => {
       const {data:{session}} = await supabase.auth.getSession();
