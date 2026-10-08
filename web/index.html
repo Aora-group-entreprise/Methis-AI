@@ -476,6 +476,72 @@ body.drawer-open .drawer{transform:translateX(0)}
       });
       updateMenuForSession();
     }
+    window.__methisCoreReady = true;
+  </script>
+
+  <script>
+    // Last-resort UI bootstrap: if the main application script ever stops before
+    // registering its handlers, the essential landing/menu controls still work.
+    (function(){
+      if(window.__methisCoreReady) return;
+      const $ = id => document.getElementById(id);
+      const closeDrawer = () => {
+        document.body.classList.remove('drawer-open');
+        const b=$('menuButton'),d=$('sidePanel');
+        if(b)b.setAttribute('aria-expanded','false');
+        if(d)d.setAttribute('aria-hidden','true');
+      };
+      const showInfoFallback = (title, html) => {
+        const m=$('infoModal'),t=$('infoTitle'),b=$('infoBody');
+        if(!m||!t||!b)return;
+        t.textContent=title;b.innerHTML=html;m.hidden=false;closeDrawer();
+      };
+      const showAuthFallback = mode => {
+        const m=$('authModal');
+        if(!m)return;
+        const t=$('authTitle'),s=$('authSubtitle'),sub=$('authSubmit'),sw=$('authSwitch');
+        if(t)t.textContent=mode==='signup'?'Sign up':'Sign in';
+        if(s)s.textContent=mode==='signup'?'Create your Methis AI account.':'Access your Methis AI account.';
+        if(sub)sub.textContent=mode==='signup'?'Create account':'Sign in';
+        if(sw)sw.textContent=mode==='signup'?'I already have an account':'Create an account';
+        m.hidden=false;closeDrawer();
+      };
+      const request = async (path,payload) => {
+        const r=await fetch(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload)});
+        const d=await r.json().catch(()=>({error:'Invalid server response.'}));
+        if(!r.ok)throw new Error(d.error||'Request failed.');
+        return d;
+      };
+      const repo = () => ($('repository')?.value||'').trim();
+      const run = async action => {
+        const value=repo();
+        if(!value){showInfoFallback(action==='fix'?'Fix':'Analyze','<p>Paste a GitHub repository first.</p>');return;}
+        let problem='';
+        if(action==='fix'){
+          problem=window.prompt('Describe one specific bug to fix:')||'';
+          if(!problem.trim())return;
+        }
+        showInfoFallback(action==='fix'?'Fix':'Analyze','<p>'+(action==='fix'?'Creating a verified GitHub Fix…':'Analyzing the repository…')+'</p>');
+        try{
+          const d=await request(action==='fix'?'/api/github-fix':'/api/analyze',action==='fix'?{repository:value,problem:problem.trim()}:{repository:value});
+          const name=(d.repository&&(d.repository.fullName||d.repository.name))||d.repository||value;
+          showInfoFallback(action==='fix'?'Fix ready':'Analysis ready','<p><strong>'+String(name).replace(/[&<>]/g,'')+'</strong></p>'+(d.summary?'<p>'+String(d.summary).replace(/[&<>]/g,'')+'</p>':''));
+        }catch(e){showInfoFallback(action+' failed','<p>'+String(e.message||e).replace(/[&<>]/g,'')+'</p>');}
+      };
+      if($('analyze'))$('analyze').onclick=()=>run('analyze');
+      if($('fix'))$('fix').onclick=()=>run('fix');
+      if($('run'))$('run').onclick=()=>run('analyze');
+      if($('analyzeItem'))$('analyzeItem').onclick=()=>run('analyze');
+      if($('fixItem'))$('fixItem').onclick=()=>run('fix');
+      if($('aboutItem'))$('aboutItem').onclick=()=>showInfoFallback('About','<p><strong>Methis AI</strong> is a conservative AI coding agent designed to understand a repository and fix one specific problem at a time.</p>');
+      if($('licenseItem'))$('licenseItem').onclick=()=>showInfoFallback('License','<p>Methis AI web interface and application code are maintained by Aora Group.</p><p>Third-party dependencies remain under their respective licenses.</p>');
+      if($('signinItem'))$('signinItem').onclick=()=>showAuthFallback('signin');
+      if($('signupItem'))$('signupItem').onclick=()=>showAuthFallback('signup');
+      if($('dashboardItem'))$('dashboardItem').onclick=()=>showAuthFallback('signin');
+      if($('upgradeButton'))$('upgradeButton').onclick=()=>showAuthFallback('signin');
+      if($('authClose'))$('authClose').onclick=()=>{$('authModal').hidden=true};
+      if($('infoClose'))$('infoClose').onclick=()=>{$('infoModal').hidden=true};
+    })();
   </script>
 </body>
 </html>
