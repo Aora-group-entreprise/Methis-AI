@@ -23,9 +23,11 @@ button{cursor:pointer}
 .hero p{margin:12px auto 0;color:#8A8ED6;font-size:14px;line-height:1.55;max-width:320px}
 .repo-wrap{margin-top:0}
 .repo-box{position:relative;width:100%;height:124px;overflow:hidden}
-.repo-track{display:flex;width:200%;height:100%;transform:translateX(0);transition:transform .58s cubic-bezier(.22,.61,.36,1);will-change:transform}
-.repo-box.mode-fix .repo-track{transform:translateX(-50%)}
-.repo-panel{position:relative;flex:0 0 50%;height:100%;padding:16px;background:#12162A;border:1px solid #2A2E4A;border-radius:16px}
+.repo-track{position:relative;width:100%;height:100%}
+.repo-panel{position:absolute;top:0;left:0;width:100%;height:100%;padding:16px;background:#12162A;border:1px solid #2A2E4A;border-radius:16px;transition:transform .58s cubic-bezier(.22,.61,.36,1);will-change:transform}
+.repo-panel:nth-child(2){transform:translate3d(100%,0,0)}
+.repo-box.mode-fix .repo-panel:nth-child(1){transform:translate3d(-100%,0,0)}
+.repo-box.mode-fix .repo-panel:nth-child(2){transform:translate3d(0,0,0)}
 .repo-panel textarea{display:block;width:100%;height:100%;padding:0 66px 0 0;border:0;outline:0;resize:none;background:transparent;color:#fff;font-size:14px;line-height:1.55}
 .repo-panel textarea::placeholder{color:#8A8ED6;opacity:.8}
 .repo-panel .run{position:absolute;right:10px;bottom:10px;height:40px;padding:0 16px;border:0;border-radius:11px;color:#fff;font-size:13px;font-weight:700;background:linear-gradient(135deg,#FF4ECD,#7A5CFF,#4ECDC4);box-shadow:0 8px 20px rgba(122,92,255,.2)}
