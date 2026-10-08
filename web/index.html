@@ -339,9 +339,12 @@ body.drawer-open .drawer{transform:translateX(0)}
       document.getElementById('dashboardRun').onclick=()=>runDash('analyze');
       document.getElementById('dashboardAnalyze').onclick=()=>runDash('analyze');
       document.getElementById('dashboardFix').onclick=()=>runDash('fix');
-      document.getElementById('dashboardAccount').onclick=async()=>{if(!supabase)return;await supabase.auth.signOut();closeAppView();updateMenuForSession()};
-      document.getElementById('dashboardBack').onclick=closeAppView;
-      document.getElementById('signoutButton').onclick=async()=>{await supabase.auth.signOut();closeAppView();updateMenuForSession()};
+      document.getElementById('dashboardAccount').onclick=async()=>{
+        if(!supabase)return;
+        await supabase.auth.signOut();
+        closeAppView();
+        updateMenuForSession();
+      };
     }
     function escapeHtml(value){return value.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
     function closeAppView(){document.getElementById('appView').classList.remove('active');document.getElementById('appView').innerHTML=''}
