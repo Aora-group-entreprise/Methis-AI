@@ -497,12 +497,25 @@ body.drawer-open .drawer{transform:translateX(0)}
       showAuth('signin');
     });
 
-    document.getElementById('analyze').addEventListener('click',()=>{
-      setAction('analyze');
-    });
-    document.getElementById('fix').addEventListener('click',()=>{
-      setAction('fix');
-    });
+    function bindLandingModeButtons(){
+      const analyzeButton=document.getElementById('analyze');
+      const fixButton=document.getElementById('fix');
+      if(!analyzeButton || !fixButton) return;
+
+      analyzeButton.onclick=()=>setAction('analyze');
+      fixButton.onclick=()=>setAction('fix');
+
+      analyzeButton.addEventListener('touchend',(event)=>{
+        event.preventDefault();
+        setAction('analyze');
+      },{passive:false});
+      fixButton.addEventListener('touchend',(event)=>{
+        event.preventDefault();
+        setAction('fix');
+      },{passive:false});
+    }
+
+    bindLandingModeButtons();
 
     const upgradeButton = document.getElementById('upgradeButton');
     if(upgradeButton) upgradeButton.addEventListener('click', async () => {
