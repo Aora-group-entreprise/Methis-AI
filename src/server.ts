@@ -8,7 +8,7 @@ import { CommandVerifier } from "./verifier.js";
 import { MethisEngine } from "./engine.js";
 import { loadGitHubRepository } from "./github.js";
 import { createFixPullRequest } from "./github-fix.js";
-import { bearerToken, consume, current, planInfo, publicAccount } from "./auth.js";
+import { bearerToken, consume, current, guestAccount, planInfo, publicAccount } from "./auth.js";
 import { PLAN_LIMITS } from "./limits.js";
 
 const root=fileURLToPath(new URL("..",import.meta.url)), webRoot=join(root,"web");
@@ -18,8 +18,10 @@ const port=Number(process.env.PORT||3000);
 function json(res:import("node:http").ServerResponse,status:number,body:unknown,extra:Record<string,string>={}){res.writeHead(status,{"content-type":"application/json; charset=utf-8","cache-control":"no-store",...extra});res.end(JSON.stringify(body));}
 async function body(req:import("node:http").IncomingMessage):Promise<any>{let raw="";for await(const chunk of req)raw+=chunk.toString();if(raw.length>100_000)throw new Error("Request too large.");return raw?JSON.parse(raw):{};}
 function repositoryInput(value:string){const raw=value.trim();if(raw.startsWith("github:")||raw.startsWith("github-fix:"))return raw;return "github:"+raw;}
-async function account(req:import("node:http").IncomingMessage){return current(bearerToken(req.headers.authorization));}
-function requireAccount(a:Awaited<ReturnType<typeof account>>){if(!a)throw new Error("Authentication required.");return a;}
+async function account(req:import("node:http").IncomingMessage){
+  const token=bearerToken(req.headers.authorization);
+  return (await current(token)) ?? guestAccount();
+}
 
 async function api(req:import("node:http").IncomingMessage,res:import("node:http").ServerResponse){
   try{
@@ -29,7 +31,7 @@ async function api(req:import("node:http").IncomingMessage,res:import("node:http
     if(req.url?.startsWith("/api/auth/"))return json(res,410,{error:"Méthis authentication is managed by Supabase Auth. Use the Supabase client session."});
     if(req.method!=="POST")return json(res,405,{error:"Method not allowed"});
 
-    const a=requireAccount(await account(req));
+    const a=await account(req);
     const data=await body(req);
     const problemText=String(data.problem||"").trim();
     if((req.url==="/api/fix"||req.url==="/api/github-fix") && (/\b(fix|repair|fixe)\b.*\b(all|everything|entire|whole|toute|tout)\b|\b(all|everything|entire|whole|toute|tout)\b.*\b(app|application|repo|repository|codebase)\b|^(fix|repair|fixe|répare|corrige)\s+(the\s+)?(app|application|repo|repository|codebase|projet|tout)\s*$/i.test(problemText))){
@@ -46,7 +48,7 @@ async function api(req:import("node:http").IncomingMessage,res:import("node:http
     }
 
     if(req.url==="/api/github-fix"){
-      if(!PLAN_LIMITS[a.plan].githubFix)return json(res,403,{error:"GitHub Fix is available on the Méthis Pro plan only."});
+      if(!PLAN_LIMITS[a.plan].githubFix)return json(res,403,{error:"GitHub Fix is not available on the current plan."});
       const repository=String(data.repository||"").trim(),problem=problemText||"Describe one specific bug to fix.";
       if(!repository)return json(res,400,{error:"Repository is required."});
       const remote=await loadGitHubRepository(repository.replace(/^github(-fix)?:/,""));
