@@ -109,13 +109,14 @@ export async function runCloudMethisEngine(input: {
   token: string;
   modelUrl?: string;
   modelName?: string;
+  modelToken?: string;
 }) {
   const repo = parseRepo(input.repository);
   const branch = `methis/agent-${Date.now().toString(36)}`;
   const baseSha = await branchSha(repo, input.baseBranch, input.token);
   await createBranch(repo, branch, baseSha, input.token);
 
-  const model = new LocalQwenModel(input.modelUrl, input.modelName);
+  const model = new LocalQwenModel(input.modelUrl, input.modelName, input.modelToken);
   let errorOutput = "";
   const attempts: Array<Record<string, unknown>> = [];
 
