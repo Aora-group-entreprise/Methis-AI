@@ -248,6 +248,11 @@ body.drawer-open .drawer{transform:translateX(0)}
     let authMode = 'signin';
 
     function showAuth(mode){
+      if(!supabase){
+        authStatus.textContent = 'Authentication service is unavailable. Please refresh and try again.';
+        authModal.hidden = false;
+        return;
+      }
       authMode = mode;
       authTitle.textContent = mode === 'signin' ? 'Sign in' : 'Sign up';
       authSubtitle.textContent = mode === 'signin' ? 'Access your Methis AI account.' : 'Create your Methis AI account.';
@@ -266,13 +271,24 @@ body.drawer-open .drawer{transform:translateX(0)}
 
     authForm.addEventListener('submit', async e => {
       e.preventDefault();
+      if(!supabase){
+        authStatus.textContent = 'Authentication service is unavailable. Please refresh and try again.';
+        return;
+      }
       authStatus.textContent = 'Please wait…';
       authSubmit.disabled = true;
       const email = document.getElementById('authEmail').value.trim();
       const password = document.getElementById('authPassword').value;
-      const result = authMode === 'signin'
-        ? await supabase.auth.signInWithPassword({email,password})
-        : await supabase.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin}});
+      let result;
+      try{
+        result = authMode === 'signin'
+          ? await supabase.auth.signInWithPassword({email,password})
+          : await supabase.auth.signUp({email,password,options:{emailRedirectTo:window.location.origin}});
+      }catch(error){
+        authSubmit.disabled = false;
+        authStatus.textContent = error instanceof Error ? error.message : 'Authentication failed.';
+        return;
+      }
       authSubmit.disabled = false;
       if(result.error){authStatus.textContent=result.error.message;return}
       closeAuth();
@@ -436,7 +452,12 @@ body.drawer-open .drawer{transform:translateX(0)}
     });
 
     if(supabase){
-      supabase.auth.onAuthStateChange(()=>updateMenuForSession());
+      supabase.auth.onAuthStateChange((_event, session)=>{
+        updateMenuForSession();
+        if(session && authMode === 'signin' && !authModal.hidden){
+          closeAuth();
+        }
+      });
       updateMenuForSession();
     }
   </script>
