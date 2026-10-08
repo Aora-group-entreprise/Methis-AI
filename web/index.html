@@ -23,15 +23,12 @@ button{cursor:pointer}
 .hero p{margin:12px auto 0;color:#8A8ED6;font-size:14px;line-height:1.55;max-width:320px}
 .repo-wrap{margin-top:0}
 .repo-box{position:relative;width:100%;height:124px;overflow:hidden}
-.repo-track{position:relative;width:100%;height:100%}
-.repo-panel{position:absolute;top:0;left:0;width:100%;height:100%;padding:16px;background:#12162A;border:1px solid #2A2E4A;border-radius:16px;transition:transform .58s cubic-bezier(.22,.61,.36,1);will-change:transform}
-.repo-panel:nth-child(2){transform:translate3d(100%,0,0)}
-.repo-box.mode-fix .repo-panel:nth-child(1){transform:translate3d(-100%,0,0)}
-.repo-box.mode-fix .repo-panel:nth-child(2){transform:translate3d(0,0,0)}
+.repo-panel{position:absolute;inset:0;padding:16px;background:#12162A;border:1px solid #2A2E4A;border-radius:16px;transform:translate3d(100%,0,0);transition:transform .56s cubic-bezier(.22,.61,.36,1);will-change:transform}
+.repo-panel.is-current{transform:translate3d(0,0,0)}
+.repo-panel.is-leaving{transform:translate3d(-100%,0,0)}
 .repo-panel textarea{display:block;width:100%;height:100%;padding:0 66px 0 0;border:0;outline:0;resize:none;background:transparent;color:#fff;font-size:14px;line-height:1.55}
 .repo-panel textarea::placeholder{color:#8A8ED6;opacity:.8}
 .repo-panel .run{position:absolute;right:10px;bottom:10px;height:40px;padding:0 16px;border:0;border-radius:11px;color:#fff;font-size:13px;font-weight:700;background:linear-gradient(135deg,#FF4ECD,#7A5CFF,#4ECDC4);box-shadow:0 8px 20px rgba(122,92,255,.2)}
-.repo-track.no-transition{transition:none}
 .actions{display:flex;justify-content:center;gap:12px;margin-top:16px}
 .action{height:42px;min-width:112px;padding:0 20px;border:1px solid #2A2E4A;border-radius:12px;background:transparent;color:#fff;font-size:13px;font-weight:650;transition:background .22s ease,border-color .22s ease,box-shadow .22s ease,transform .12s ease}.action.active{border-color:transparent;background:linear-gradient(135deg,#FF4ECD,#7A5CFF,#4ECDC4);box-shadow:0 8px 24px rgba(122,92,255,.18)}
 .action:active{transform:scale(.98)}
@@ -88,20 +85,18 @@ body.drawer-open .drawer{transform:translateX(0)}
     </section>
     <section class="repo-wrap" aria-label="GitHub repository">
       <div class="repo-box" id="repoBox">
-        <div class="repo-track" id="repoTrack">
-          <div class="repo-panel">
-            <textarea id="repository" rows="2" placeholder="Paste your GitHub repository&#10;https://github.com/owner/repository"></textarea>
-            <button id="run" class="run" type="button">Run</button>
-          </div>
-          <div class="repo-panel">
-            <textarea id="repositoryFix" rows="2" placeholder="Paste your GitHub repository to fix&#10;https://github.com/owner/repository"></textarea>
-            <button id="runFix" class="run" type="button">Run</button>
-          </div>
+        <div class="repo-panel is-current" id="analyzePanel">
+          <textarea id="repository" rows="2" placeholder="Paste your GitHub repository&#10;https://github.com/owner/repository"></textarea>
+          <button id="run" class="run" type="button">Run</button>
+        </div>
+        <div class="repo-panel" id="fixPanel" aria-hidden="true">
+          <textarea id="repositoryFix" rows="2" placeholder="Paste your GitHub repository to fix&#10;https://github.com/owner/repository"></textarea>
+          <button id="runFix" class="run" type="button">Run</button>
         </div>
       </div>
       <div class="actions">
-        <button id="analyze" class="action" type="button">Analyze</button>
-        <button id="fix" class="action" type="button">Fix</button>
+        <button id="analyze" class="action active" type="button" aria-pressed="true">Analyze</button>
+        <button id="fix" class="action" type="button" aria-pressed="false">Fix</button>
       </div>
       <div class="note">1 Fix = 1 logical problem</div>
     </section>
@@ -387,34 +382,39 @@ body.drawer-open .drawer{transform:translateX(0)}
     document.getElementById('aboutItem').addEventListener('click',()=>showInfo('About','<p><strong>Methis AI</strong> is a conservative AI coding agent designed to understand a repository and fix one specific problem at a time.</p><p>It uses a local open-weight coding model and validates changes before they are prepared for GitHub.</p>'));
     document.getElementById('licenseItem').addEventListener('click',()=>showInfo('License','<p>Methis AI web interface and application code are maintained by Aora Group.</p><p>Third-party dependencies remain under their respective licenses. Supabase JS is distributed under its own open-source license.</p>'));
     let selectedAction = 'analyze';
-    document.getElementById('analyze').classList.add('active');
-    document.getElementById('analyze').setAttribute('aria-pressed','true');
-    document.getElementById('fix').setAttribute('aria-pressed','false');
-
-    let landingAnimationTimer = null;
+    const analyzePanel=document.getElementById('analyzePanel');
+    const fixPanel=document.getElementById('fixPanel');
+    const analyzeButton=document.getElementById('analyze');
+    const fixButton=document.getElementById('fix');
 
     function setAction(action){
-      const field=document.getElementById('repository');
-      const fixField=document.getElementById('repositoryFix');
-      const track=document.getElementById('repoTrack');
-      const isFix=action==='fix';
+      if(action===selectedAction) return;
 
-      clearTimeout(landingAnimationTimer);
-      track.classList.remove('no-transition');
-      void track.offsetWidth;
-      track.classList.toggle('mode-fix', isFix);
+      const fromPanel=selectedAction==='analyze' ? analyzePanel : fixPanel;
+      const toPanel=action==='analyze' ? analyzePanel : fixPanel;
 
-      document.getElementById('analyze').classList.toggle('active', !isFix);
-      document.getElementById('fix').classList.toggle('active', isFix);
-      document.getElementById('analyze').setAttribute('aria-pressed', String(!isFix));
-      document.getElementById('fix').setAttribute('aria-pressed', String(isFix));
+      fromPanel.classList.remove('is-current');
+      fromPanel.classList.add('is-leaving');
+      toPanel.classList.remove('is-leaving');
+      toPanel.classList.add('is-current');
+      toPanel.setAttribute('aria-hidden','false');
+      fromPanel.setAttribute('aria-hidden','true');
+
+      analyzeButton.classList.toggle('active',action==='analyze');
+      fixButton.classList.toggle('active',action==='fix');
+      analyzeButton.setAttribute('aria-pressed',String(action==='analyze'));
+      fixButton.setAttribute('aria-pressed',String(action==='fix'));
       selectedAction=action;
 
-      landingAnimationTimer=setTimeout(()=>{
-        track.classList.remove('no-transition');
-        (isFix ? fixField : field).focus();
-      },600);
+      window.setTimeout(()=>{
+        fromPanel.classList.remove('is-leaving');
+        (action==='analyze' ? document.getElementById('repository') : document.getElementById('repositoryFix')).focus();
+      },580);
     }
+
+    analyzeButton.addEventListener('click',()=>setAction('analyze'));
+    fixButton.addEventListener('click',()=>setAction('fix'));
+
     async function authRequest(path,payload){
       const response=await fetch(path,{
         method:'POST',
@@ -466,15 +466,16 @@ body.drawer-open .drawer{transform:translateX(0)}
     let pendingRunAfterAuth = false;
     let pendingLandingRepository = '';
 
-    document.getElementById('run').addEventListener('click',async()=>{
-      const repository=document.getElementById('repository').value.trim();
+    async function handleLandingRun(){
+      const field=selectedAction==='fix' ? document.getElementById('repositoryFix') : document.getElementById('repository');
+      const repository=field.value.trim();
       if(!repository){
-        document.getElementById('repository').focus();
+        field.focus();
         return;
       }
 
-      pendingLandingRepository = repository;
-      pendingRunAfterAuth = true;
+      pendingLandingRepository=repository;
+      pendingRunAfterAuth=true;
 
       if(!supabase){
         showAuth('signin');
@@ -482,12 +483,12 @@ body.drawer-open .drawer{transform:translateX(0)}
       }
 
       try{
-        const {data:{session}} = await supabase.auth.getSession();
+        const {data:{session}}=await supabase.auth.getSession();
         if(session){
-          const action = selectedAction;
-          pendingRunAfterAuth = false;
-          pendingLandingRepository = '';
-          openDashboard(repository, action);
+          const action=selectedAction;
+          pendingRunAfterAuth=false;
+          pendingLandingRepository='';
+          openDashboard(repository,action);
           return;
         }
       }catch(error){
@@ -495,9 +496,10 @@ body.drawer-open .drawer{transform:translateX(0)}
       }
 
       showAuth('signin');
-    });
+    }
 
-    // Analyze/Fix listeners are bound once below with the main landing flow.
+    document.getElementById('run').addEventListener('click',handleLandingRun);
+    document.getElementById('runFix').addEventListener('click',handleLandingRun);
 
     const upgradeButton = document.getElementById('upgradeButton');
     if(upgradeButton) upgradeButton.addEventListener('click', async () => {
