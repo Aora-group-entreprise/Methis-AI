@@ -165,14 +165,6 @@ body.drawer-open .drawer{transform:translateX(0)}
     </section>
   </div>
 
-  <div id="infoModal" class="modal-backdrop" hidden>
-    <section class="modal info-modal" role="dialog" aria-modal="true" aria-labelledby="infoTitle">
-      <button id="infoClose" class="modal-close" aria-label="Close">×</button>
-      <h2 id="infoTitle"></h2>
-      <div id="infoBody" class="info-body"></div>
-    </section>
-  </div>
-
   <style>
 .app-view{position:fixed;inset:0;background:#0A0B14;z-index:30;display:none;overflow:auto}
 .app-view.active{display:block}
@@ -232,20 +224,6 @@ body.drawer-open .drawer{transform:translateX(0)}
 
     // Keep the core UI independent from optional authentication.
     // Auth initialization must never prevent the menu or landing actions from working.
-    const infoTitle = document.getElementById('infoTitle');
-    const infoBody = document.getElementById('infoBody');
-    const infoModal = document.getElementById('infoModal');
-    const infoClose = document.getElementById('infoClose');
-
-    function showInfo(title, html){
-      infoTitle.textContent = title;
-      infoBody.innerHTML = html;
-      infoModal.hidden = false;
-      closeDrawer();
-    }
-    infoClose.onclick = () => { infoModal.hidden = true; };
-    infoModal.addEventListener('click', e => { if(e.target === infoModal) infoModal.hidden = true; });
-
     const SUPABASE_URL = 'https://dyqkgkqlihcrhrpcbjgh.supabase.co';
     const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_bmraW60kS5DKdI2qO_7aNA_WoHYgHq';
     let supabase = null;
@@ -363,7 +341,7 @@ body.drawer-open .drawer{transform:translateX(0)}
       </div>`;
       view.classList.add('active');
       const dashRepo=document.getElementById('dashboardRepository');
-      const runDash=async(action)=>{const repo=dashRepo.value.trim();if(!repo){showInfo(action==='fix'?'Fix':'Analyze','<p>Paste a GitHub repository first.</p>');return;}if(action==='fix'){const problem=window.prompt('Describe one specific bug to fix:');if(!problem||!problem.trim())return;showInfo('Fix','<p>Creating a verified GitHub Fix…</p>');try{renderResult('Fix ready',await authRequest('/api/github-fix',{repository:repo,problem:problem.trim()}));}catch(error){showInfo('Fix failed','<p>'+escapeHtml(error.message)+'</p>')}}else{showInfo('Analyze','<p>Analyzing the repository…</p>');try{renderResult('Analysis ready',await authRequest('/api/analyze',{repository:repo}));}catch(error){showInfo('Analyze failed','<p>'+escapeHtml(error.message)+'</p>')}}};
+      const runDash=async(action)=>{const repo=dashRepo.value.trim();if(!repo){showInfo(action==='fix'?'Fix':'Analyze','<p>Paste a GitHub repository first.</p>');return;}if(action==='fix'){const problem=window.prompt('Describe one specific bug to fix:');if(!problem||!problem.trim())return;try{renderResult('Fix ready',await authRequest('/api/github-fix',{repository:repo,problem:problem.trim()}));}catch(error){showInfo('Fix failed','<p>'+escapeHtml(error.message)+'</p>')}}else{try{renderResult('Analysis ready',await authRequest('/api/analyze',{repository:repo}));}catch(error){showInfo('Analyze failed','<p>'+escapeHtml(error.message)+'</p>')}}};
       document.getElementById('dashboardRun').onclick=()=>runDash('analyze');
       document.getElementById('dashboardAnalyze').onclick=()=>runDash('analyze');
       document.getElementById('dashboardFix').onclick=()=>runDash('fix');
@@ -422,7 +400,7 @@ body.drawer-open .drawer{transform:translateX(0)}
       const repository=document.getElementById('repository').value.trim();
       if(!repository){showInfo('Analyze','<p>Paste a GitHub repository first.</p>');document.getElementById('repository').focus();return;}
       try{
-        showInfo('Analyze','<p>Analyzing the repository…</p>');
+        
         const data=await authRequest('/api/analyze',{repository});
         if(data) renderResult('Analysis ready',data);
       }catch(error){showInfo('Analyze failed','<p>'+escapeHtml(error.message)+'</p>');}
@@ -434,7 +412,7 @@ body.drawer-open .drawer{transform:translateX(0)}
       const problem=window.prompt('Describe one specific bug to fix:');
       if(!problem || !problem.trim()) return;
       try{
-        showInfo('Fix','<p>Creating a verified GitHub Fix…</p>');
+        
         const data=await authRequest('/api/github-fix',{repository,problem:problem.trim()});
         if(data) renderResult('Fix ready',data);
       }catch(error){showInfo('Fix failed','<p>'+escapeHtml(error.message)+'</p>');}
