@@ -278,8 +278,12 @@ body.drawer-open .drawer{transform:translateX(0)}
       closeAuth();
       if(authMode === 'signup' && !result.data.session){
         showInfo('Check your email', '<p>Your account was created. Open the verification email from Supabase, then return here and sign in.</p>');
+      } else if(result.data.session){
+        await updateMenuForSession();
+        openDashboard();
+      } else {
+        await updateMenuForSession();
       }
-      updateMenuForSession();
     });
 
     async function updateMenuForSession(){
@@ -301,7 +305,7 @@ body.drawer-open .drawer{transform:translateX(0)}
             <svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="dashAtom" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF3CA4"/><stop offset=".34" stop-color="#7A5CFF"/><stop offset=".68" stop-color="#4CB5FF"/><stop offset="1" stop-color="#2EFFD2"/></linearGradient></defs><ellipse cx="12" cy="12" rx="9.5" ry="4.2" fill="none" stroke="url(#dashAtom)" stroke-width="1.7" transform="rotate(30 12 12)"/><ellipse cx="12" cy="12" rx="9.5" ry="4.2" fill="none" stroke="url(#dashAtom)" stroke-width="1.7" transform="rotate(-30 12 12)"/><ellipse cx="12" cy="12" rx="9.5" ry="4.2" fill="none" stroke="url(#dashAtom)" stroke-width="1.7" transform="rotate(90 12 12)"/><circle cx="12" cy="12" r="2" fill="url(#dashAtom)"/></svg>
             <span>Methis AI</span>
           </div>
-          <button class="dashboard-avatar" aria-label="Account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c.8-3.3 3-5 6.5-5s5.7 1.7 6.5 5"/></svg></button>
+          <button class="dashboard-avatar" id="dashboardAccount" aria-label="Sign out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19c.8-3.3 3-5 6.5-5s5.7 1.7 6.5 5"/></svg></button>
         </header>
         <main class="dashboard-content">
           <section class="dashboard-hero"><h1>Methis AI</h1><p>Understand your code. Fix one problem at a time</p></section>
@@ -319,6 +323,7 @@ body.drawer-open .drawer{transform:translateX(0)}
       document.getElementById('dashboardRun').onclick=()=>runDash('analyze');
       document.getElementById('dashboardAnalyze').onclick=()=>runDash('analyze');
       document.getElementById('dashboardFix').onclick=()=>runDash('fix');
+      document.getElementById('dashboardAccount').onclick=async()=>{if(!supabase)return;await supabase.auth.signOut();closeAppView();updateMenuForSession()};
       document.getElementById('dashboardBack').onclick=closeAppView;
       document.getElementById('signoutButton').onclick=async()=>{await supabase.auth.signOut();closeAppView();updateMenuForSession()};
     }
