@@ -346,12 +346,9 @@ body.drawer-open .drawer{transform:translateX(0)}
     }
 
     async function authRequest(path,payload){
-      if(!supabase) throw new Error('Authentication service is unavailable. Refresh the page and try again.');
-      const {data:{session}}=await supabase.auth.getSession();
-      if(!session){showAuth('signin');return null;}
       const response=await fetch(path,{
         method:'POST',
-        headers:{'content-type':'application/json','authorization':'Bearer '+session.access_token},
+        headers:{'content-type':'application/json',},
         body:JSON.stringify(payload)
       });
       const data=await response.json().catch(()=>({error:'Invalid server response.'}));
@@ -392,8 +389,6 @@ body.drawer-open .drawer{transform:translateX(0)}
     }
 
     async function runSelectedAction(){
-      const {data:{session}}=await supabase.auth.getSession();
-      if(!session){showAuth('signin');return;}
       if(selectedAction==='fix') await fixRepository();
       else await analyzeRepository();
     }
