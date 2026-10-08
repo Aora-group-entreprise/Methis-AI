@@ -71,7 +71,7 @@ body.drawer-open .drawer{transform:translateX(0)}
 <body>
   <main class="page">
     <header class="header">
-      <button id="menuButton" class="menu-button" aria-label="Open menu" aria-controls="sidePanel" aria-expanded="false">
+      <button id="menuButton" class="menu-button" type="button" aria-label="Open menu" aria-controls="sidePanel" aria-expanded="false" onclick="document.body.classList.add('drawer-open');this.setAttribute('aria-expanded','true');document.getElementById('sidePanel').setAttribute('aria-hidden','false')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 7h14"/><path d="M5 12h14"/><path d="M5 17h14"/></svg>
       </button>
     </header>
@@ -108,7 +108,7 @@ body.drawer-open .drawer{transform:translateX(0)}
         <img src="https://raw.githubusercontent.com/Aora-group-entreprise/Methis-AI/main/file_0000000081f88208bb42c3ed7879a73a.png" alt="">
         <strong>Methis AI</strong>
       </div>
-      <button id="closeMenu" class="drawer-close" aria-label="Close menu">×</button>
+      <button id="closeMenu" class="drawer-close" type="button" aria-label="Close menu" onclick="document.body.classList.remove('drawer-open');document.getElementById('menuButton').setAttribute('aria-expanded','false');document.getElementById('sidePanel').setAttribute('aria-hidden','true')">×</button>
     </div>
 
     <nav class="drawer-nav">
