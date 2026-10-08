@@ -446,41 +446,11 @@ body.drawer-open .drawer{transform:translateX(0)}
       try{await runSelectedAction();}catch(error){showInfo('Request failed','<p>'+escapeHtml(error instanceof Error?error.message:String(error))+'</p>');}
       finally{button.disabled=false;button.textContent='Run';}
     });
-    document.getElementById('analyze').addEventListener('click',async()=>{
-      const button=document.getElementById('analyze');
-      button.disabled=true;
-      try{
-        setAction('analyze');
-        const repository=document.getElementById('repository').value.trim();
-        if(!repository){
-          document.getElementById('repository').focus();
-          return;
-        }
-        showInfo('Analyze','<p>Analyzing the repository…</p>');
-        const data=await authRequest('/api/analyze',{repository});
-        if(data) renderResult('Analysis ready',data);
-      }catch(error){
-        showInfo('Analyze failed','<p>'+escapeHtml(error instanceof Error?error.message:String(error))+'</p>');
-      }finally{button.disabled=false;}
+    document.getElementById('analyze').addEventListener('click',()=>{
+      setAction('analyze');
     });
-    document.getElementById('fix').addEventListener('click',async()=>{
-      const button=document.getElementById('fix');
-      button.disabled=true;
-      try{
-        setAction('fix');
-        const repository=document.getElementById('repository').value.trim();
-        if(!repository){
-          document.getElementById('repository').focus();
-          return;
-        }
-        const problem=window.prompt('Describe one specific bug to fix:');
-        if(!problem || !problem.trim()) return;
-        showInfo('Fix','<p>Creating a verified GitHub Fix…</p>');
-        const data=await authRequest('/api/github-fix',{repository,problem:problem.trim()});
-        if(data) renderResult('Fix ready',data);
-      }catch(error){
-        showInfo('Fix failed','<p>'+escapeHtml(error instanceof Error?error.message:String(error))+'</p>');
-      }finally{button.disabled=false;}
+    document.getElementById('fix').addEventListener('click',()=>{
+      setAction('fix');
     });
 
     const upgradeButton = document.getElementById('upgradeButton');
