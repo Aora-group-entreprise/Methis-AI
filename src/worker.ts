@@ -1,6 +1,7 @@
 import { LocalQwenModel } from "./model.js";
 import { loadGitHubRepository } from "./github.js";
 import { createFixPullRequest } from "./github-fix.js";
+import { runCloudMethisEngine } from "./cloud-engine.js";
 
 interface AssetsBinding { fetch(request: Request): Promise<Response>; }
 interface Env {
@@ -207,6 +208,23 @@ export default {
         return json({ repository: parsed, branch, baseBranch: base, pullRequest: pr.html_url, pullRequestNumber: pr.number, status: pr.state || "open" }, 201);
       }
 
+      if (url.pathname === "/api/workspace/agent-run") {
+        if (!env.GITHUB_TOKEN) return json({ error: "GITHUB_TOKEN is not configured on the Worker." }, 500);
+        const repository = String(data.repository ?? "").trim();
+        const task = String(data.task ?? "").trim();
+        const baseBranch = String(data.baseBranch ?? "").trim() || "main";
+        if (!repository || !task) return json({ error: "Repository and task are required." }, 400);
+        const result = await runCloudMethisEngine({
+          repository,
+          task,
+          baseBranch,
+          token: env.GITHUB_TOKEN,
+          modelUrl: env.METHIS_MODEL_URL,
+          modelName: env.METHIS_MODEL,
+        });
+        return json(result, result.status === "verified" ? 201 : 422);
+      }
+
       if (url.pathname === "/api/workspace/agent") {
         if (!env.GITHUB_TOKEN) return json({ error: "GITHUB_TOKEN is not configured on the Worker." }, 500);
         const repository = String(data.repository ?? "").trim();
@@ -291,11 +309,14 @@ export default {
         const branch = String(data.branch ?? "").trim();
         if (!repository || !branch) return json({ error: "Repository and branch are required." }, 400);
         const parsed = parseRepository(repository);
-        const runs = await githubApi<{ workflow_runs?: Array<{ id?: number; name?: string; status?: string; conclusion?: string; html_url?: string; head_branch?: string }> }>(
-          `https://api.github.com/repos/${parsed.owner}/${parsed.name}/actions/runs?branch=${encodeURIComponent(branch)}&per_page=10`,
-          env.GITHUB_TOKEN,
-        );
-        const run = (runs.workflow_runs ?? []).find(item => item.head_branch === branch);
+        const requestedCommit = String(data.commit ?? "").trim();
+        const endpoint = requestedCommit
+          ? `https://api.github.com/repos/${parsed.owner}/${parsed.name}/actions/runs?head_sha=${encodeURIComponent(requestedCommit)}&per_page=10`
+          : `https://api.github.com/repos/${parsed.owner}/${parsed.name}/actions/runs?branch=${encodeURIComponent(branch)}&per_page=10`;
+        const runs = await githubApi<{ workflow_runs?: Array<{ id?: number; name?: string; status?: string; conclusion?: string; html_url?: string; head_branch?: string; head_sha?: string }> }>(endpoint, env.GITHUB_TOKEN);
+        const run = requestedCommit
+          ? (runs.workflow_runs ?? []).find(item => item.head_sha === requestedCommit)
+          : (runs.workflow_runs ?? []).find(item => item.head_branch === branch);
         if (!run) return json({
           repository: parsed,
           branch,
