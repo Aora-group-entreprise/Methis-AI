@@ -75,9 +75,9 @@ button,a{font:inherit}button{cursor:pointer}.page{width:100%;max-width:520px;mar
 
 <div id="modalBackdrop" class="modal-backdrop" hidden>
 <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-<button id="modalClose" class="modal-close" aria-label="Close">×</button>
+<button type="button" id="modalClose" class="modal-close" aria-label="Close">×</button>
 <h2 id="modalTitle">Start with Méthis AI</h2><p id="modalText">The landing page is your introduction. Continue to the Méthis workspace when you're ready to use the product.</p>
-<div class="modal-buttons"><a class="primary" href="/app">Open Méthis</a><a class="secondary" href="https://github.com/Aora-group-entreprise/Methis-AI" target="_blank" rel="noopener">View GitHub</a></div>
+<div class="modal-buttons"><button type="button" class="primary" id="openMethis">Open Méthis</button><a class="secondary" href="https://github.com/Aora-group-entreprise/Methis-AI" target="_blank" rel="noopener">View GitHub</a></div>
 </section>
 </div>
 
@@ -101,9 +101,26 @@ openModal(type==='fix'?'Fix request ready':'Analysis request ready');
 document.getElementById('analyzeRun').onclick=()=>runPreview('analyze');document.getElementById('fixRun').onclick=()=>runPreview('fix');
 
 const modal=document.getElementById('modalBackdrop');
-function openModal(kind){if(kind){document.getElementById('modalTitle').textContent=kind;document.getElementById('modalText').textContent='The landing page introduces Méthis. Open the workspace to use the product, or inspect the open-source project first.'}modal.hidden=false}
-function closeModal(){modal.hidden=true}
-document.getElementById('modalClose').onclick=closeModal;modal.onclick=e=>{if(e.target===modal)closeModal()};
+const modalClose=document.getElementById('modalClose');
+const openMethis=document.getElementById('openMethis');
+function openModal(kind){
+  if(kind){
+    document.getElementById('modalTitle').textContent=kind;
+    document.getElementById('modalText').textContent='The landing page introduces Méthis. Continue when you are ready to use the product.';
+  }
+  modal.hidden=false;
+  modal.setAttribute('aria-hidden','false');
+}
+function closeModal(){
+  modal.hidden=true;
+  modal.setAttribute('aria-hidden','true');
+}
+modalClose.addEventListener('click',closeModal);
+modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
+openMethis.addEventListener('click',()=>{
+  closeModal();
+  document.getElementById('product').scrollIntoView({behavior:'smooth',block:'start'});
+});
 document.querySelectorAll('[data-start]').forEach(b=>b.onclick=()=>openModal(b.dataset.start==='pro'?'Pro plan':'Free plan'));
 document.getElementById('startMenu').onclick=()=>{closeMenu();openModal('Start with Méthis AI')};
 document.querySelectorAll('[data-scroll]').forEach(b=>b.onclick=()=>{document.getElementById(b.dataset.scroll).scrollIntoView({behavior:'smooth'});closeMenu()});
